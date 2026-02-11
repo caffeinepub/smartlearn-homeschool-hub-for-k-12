@@ -1,46 +1,50 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Update premium pricing cadence copy and checkout metadata to 9 weeks",
+  "title": "Fix Premium Report Card Stripe price to $5.00 (500 cents) and align UI price display",
   "requirements": [
     {
-      "id": "REQ-13",
-      "summary": "Replace all user-facing premium pricing cadence copy to $5 billed every 9 weeks (remove any '3 months' mentions).",
+      "id": "REQ-17",
+      "summary": "Send a fixed $5.00 (500 cents) line item when starting the Premium Report Card Stripe checkout flow from the frontend.",
       "acceptanceCriteria": [
-        "The premium upsell banner copy says \"$5 every 9 weeks\" (and does not mention \"3 months\").",
-        "The Report Cards upgrade screen shows \"$5 / 9 weeks\" (or equivalent clear English) instead of \"$5 / 3 months\".",
-        "No other frontend screens mention the old premium billing cadence (\"3 months\")."
+        "When starting the Premium upgrade flow, the checkout session request includes a single line item with priceInCents = 500 (USD) and quantity = 1.",
+        "No frontend code path sends a different priceInCents value for Premium Report Card Access."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/PremiumBanner.tsx",
-          "operation": "modify",
-          "description": "Update the premium upsell banner copy to say \"$5 every 9 weeks\" and remove any \"3 months\"/\"every 3 months\" messaging. Uses shadcn-ui Alert/Button components already composed in this file (do not edit files under frontend/src/components/ui). Verify the component's usage instructions before implementing."
+          "path": "frontend/src/constants/premiumPricing.ts",
+          "operation": "create",
+          "description": "Create a single source of truth for Premium Report Card pricing (e.g., PREMIUM_PRICE_CENTS = 500n, PREMIUM_CURRENCY = 'usd', PREMIUM_PRODUCT_NAME, PREMIUM_QUANTITY = 1n) and a helper to build the Stripe ShoppingItem array for checkout so no other code path can diverge."
         },
         {
           "path": "frontend/src/components/ReportCardsTab.tsx",
           "operation": "modify",
-          "description": "Update the Report Cards upgrade screen pricing display text from \"$5 / 3 months\" to \"$5 / 9 weeks\" (or equivalent clear English), ensuring no user-facing copy in this screen mentions \"3 months\". Uses shadcn-ui Card/Button/Badge/etc already composed in this file (do not edit files under frontend/src/components/ui). Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/OnboardingGuide.tsx",
-          "operation": "modify",
-          "description": "Update onboarding Premium Report Cards step copy to reference \"$5 every 9 weeks\" and remove the \"every 3 months\" phrasing so onboarding no longer mentions the old cadence. Uses shadcn-ui Dialog/Progress/ScrollArea composed in this file (do not edit files under frontend/src/components/ui). Verify the component's usage instructions before implementing."
+          "description": "Update the Premium upgrade flow to build checkout items exclusively from the shared premium pricing constants/helper so the request always sends exactly one line item with priceInCents=500 (USD) and quantity=1; continue redirecting via window.location.href. Use the existing Stripe checkout mutation (useCreateCheckoutSession) consistent with the selected \"stripe\" component. Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
-      "id": "REQ-14",
-      "summary": "Update Stripe checkout line-item description metadata to reflect 9 weeks of premium access while keeping the $5 (500 cents) amount.",
+      "id": "REQ-19",
+      "summary": "Update all Premium Report Card price UI text to display “$5.00” (two decimals) wherever shown.",
       "acceptanceCriteria": [
-        "When starting checkout, the item description reflects “9 weeks” rather than “3 months”.",
-        "The checkout amount remains $5 (500 cents)."
+        "Premium pricing UI text displays “$5.00” (not “$5”) wherever the premium price is shown.",
+        "All updated user-facing text remains in English."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/ReportCardsTab.tsx",
           "operation": "modify",
-          "description": "In the checkout items passed to the createCheckoutSession mutation, update the ShoppingItem.productDescription from \"3 months access to report card features\" to \"9 weeks access to report card features\" (or equivalent), and confirm priceInCents stays BigInt(500) with quantity unchanged. Verify the component's usage instructions before implementing."
+          "description": "Update the Premium upsell price display to show “$5.00” (two decimal places) and, where appropriate, use the shared display-price constant from frontend/src/constants/premiumPricing.ts to avoid drift."
+        },
+        {
+          "path": "frontend/src/components/PremiumBanner.tsx",
+          "operation": "modify",
+          "description": "Update the banner copy to display “$5.00” (two decimal places) and optionally reference the shared display-price constant from frontend/src/constants/premiumPricing.ts so the banner stays consistent with the checkout price."
+        },
+        {
+          "path": "frontend/src/components/OnboardingGuide.tsx",
+          "operation": "modify",
+          "description": "Update the Premium onboarding step description text to display “$5.00” (two decimal places) and keep all user-facing text in English."
         }
       ]
     }

@@ -2,8 +2,30 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-all-user-facing-premium-pricing-copy-to-state-that-premium-report-cards-cost-5-billed-every-9-weeks-replace-any-existing-every-3-months-3-months-messaging-wherever-it-appears",
-      "featureTitle": "Update all user-facing premium pricing copy to state that Premium Report Cards cost $5 billed every 9 weeks (replace any existing “every 3 months” / “/ 3 months” messaging wherever it appears).",
+      "featureId": "feature-ensure-the-stripe-checkout-session-for-premium-report-card-access-charges-exactly-5-00-usd-500-cents-by-sending-500-cents-as-the-line-item-amount-when-creating-a-checkout-session-from-the-frontend",
+      "featureTitle": "Ensure the Stripe checkout session for Premium Report Card Access charges exactly $5.00 USD (500 cents) by sending 500 cents as the line-item amount when creating a checkout session from the frontend.",
+      "files": [
+        "frontend/src/components/ReportCardsTab.tsx",
+        "frontend/src/constants/premiumPricing.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-17"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-any-user-facing-price-formatting-for-premium-report-cards-to-display-5-00-two-decimal-places-wherever-the-premium-price-is-shown-in-the-ui",
+      "featureTitle": "Update any user-facing price formatting for Premium Report Cards to display “$5.00” (two decimal places) wherever the premium price is shown in the UI.",
       "files": [
         "frontend/src/components/OnboardingGuide.tsx",
         "frontend/src/components/PremiumBanner.tsx",
@@ -20,28 +42,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-13"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-update-the-checkout-line-item-metadata-sent-to-the-backend-so-that-the-product-description-reflects-a-9-week-access-period-at-5-e-g-replace-3-months-access-to-report-card-features-with-9-weeks-access-to-report-card-features",
-      "featureTitle": "Update the checkout line-item metadata sent to the backend so that the product description reflects a 9-week access period at $5 (e.g., replace “3 months access to report card features” with “9 weeks access to report card features”).",
-      "files": [
-        "frontend/src/components/ReportCardsTab.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "stripe@3.0.0",
-        "http-outcalls@3.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-14"
+        "REQ-19"
       ],
       "confidence": "high"
     }

@@ -3,6 +3,7 @@ import { useGetPremiumAccessStatus } from '../hooks/useQueries';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Crown, Sparkles } from 'lucide-react';
+import { PREMIUM_PRICE_DISPLAY, PREMIUM_DURATION_DISPLAY } from '../constants/premiumPricing';
 
 interface PremiumBannerProps {
   onUpgrade: () => void;
@@ -25,7 +26,7 @@ export default function PremiumBanner({ onUpgrade }: PremiumBannerProps) {
       </AlertTitle>
       <AlertDescription className="mt-2 flex items-center justify-between">
         <span className="text-sm">
-          Get access to comprehensive report card generation for just $5 every 9 weeks.
+          Get access to comprehensive report card generation for just {PREMIUM_PRICE_DISPLAY} every {PREMIUM_DURATION_DISPLAY}.
         </span>
         <Button onClick={onUpgrade} size="sm" className="ml-4">
           Upgrade Now
@@ -34,4 +35,3 @@ export default function PremiumBanner({ onUpgrade }: PremiumBannerProps) {
     </Alert>
   );
 }
-

@@ -1,54 +1,49 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T18:20:58.585Z",
+  "generatedAt": "2026-02-11T18:30:42.105Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
+    "total": 3,
     "implemented": 2,
     "items": [
       {
-        "id": "REQ-13",
-        "summary": "Update all user-facing premium pricing copy to state that Premium Report Cards cost $5 billed every 9 weeks (replace any existing “every 3 months” / “/ 3 months” messaging wherever it appears).",
+        "id": "REQ-17",
+        "summary": "Ensure the Stripe checkout session for Premium Report Card Access charges exactly $5.00 USD (500 cents) by sending 500 cents as the line-item amount when creating a checkout session from the frontend.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/PremiumBanner.tsx",
-          "frontend/src/components/ReportCardsTab.tsx",
-          "frontend/src/components/OnboardingGuide.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/PremiumBanner.tsx",
-          "frontend/src/components/ReportCardsTab.tsx",
-          "frontend/src/components/OnboardingGuide.tsx"
-        ]
-      },
-      {
-        "id": "REQ-14",
-        "summary": "Update the checkout line-item metadata sent to the backend so that the product description reflects a 9-week access period at $5 (e.g., replace “3 months access to report card features” with “9 weeks access to report card features”).",
-        "status": "implemented",
-        "plannedFiles": [
+          "frontend/src/constants/premiumPricing.ts",
           "frontend/src/components/ReportCardsTab.tsx"
         ],
         "matchedFiles": [
+          "frontend/src/constants/premiumPricing.ts",
           "frontend/src/components/ReportCardsTab.tsx"
         ]
       },
       {
-        "id": "REQ-15",
-        "summary": "Update the backend premium access duration so that newly granted/purchased premium access lasts 9 weeks (instead of the current ~3-month duration), while keeping the price at 500 cents.",
+        "id": "REQ-18",
+        "summary": "Enforce the $5.00 (500 cents) price on the backend for Premium Report Card Access by validating incoming checkout line items and rejecting any attempt to create a checkout session with a different amount for that product.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-16",
-        "summary": "Update any backend-provided premium price strings shown in preview/onboarding data (e.g., App Store preview / onboarding guide premium sections) so they describe $5 every 9 weeks in clear English.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "id": "REQ-19",
+        "summary": "Update any user-facing price formatting for Premium Report Cards to display “$5.00” (two decimal places) wherever the premium price is shown in the UI.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/ReportCardsTab.tsx",
+          "frontend/src/components/PremiumBanner.tsx",
+          "frontend/src/components/OnboardingGuide.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/ReportCardsTab.tsx",
+          "frontend/src/components/PremiumBanner.tsx",
+          "frontend/src/components/OnboardingGuide.tsx"
+        ]
       }
     ]
   },
@@ -61,6 +56,7 @@
     "frontend/src/components/OnboardingGuide.tsx",
     "frontend/src/components/PremiumBanner.tsx",
     "frontend/src/components/ReportCardsTab.tsx",
+    "frontend/src/constants/premiumPricing.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

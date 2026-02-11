@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { BookOpen, BarChart3, GraduationCap, FileText, CheckCircle2 } from 'lucide-react';
+import { PREMIUM_PRICE_DISPLAY, PREMIUM_DURATION_DISPLAY } from '../constants/premiumPricing';
 
 interface OnboardingGuideProps {
   isOpen: boolean;
@@ -33,70 +34,37 @@ export default function OnboardingGuide({ isOpen, onClose, isTeacher }: Onboardi
       icon: <CheckCircle2 className="h-14 w-14 text-primary sm:h-16 sm:w-16" />,
       content: isTeacher
         ? 'As a teacher or parent, you can create lesson plans, assign work to students, track their progress, and generate report cards.'
-        : 'As a student, you can view your assigned lessons, submit assignments, track your progress, and see your grades.',
+        : 'As a student, you can view your assignments, submit work, track your progress, and see your grades across all subjects.',
     },
     {
-      title: 'Explore the Five Core Subjects',
-      description: 'Our curriculum covers all essential subjects for comprehensive K-12 education.',
+      title: 'Lesson Planning',
+      description: 'Create and manage lessons across 5 core subjects',
       icon: <BookOpen className="h-14 w-14 text-primary sm:h-16 sm:w-16" />,
-      content: (
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground sm:text-base">
-            Access lessons and materials across five core subjects:
-          </p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-            {[
-              { name: 'History', icon: '/assets/generated/history-icon.dim_64x64.png' },
-              { name: 'Math', icon: '/assets/generated/math-icon.dim_64x64.png' },
-              { name: 'Language Arts', icon: '/assets/generated/language-arts-icon.dim_64x64.png' },
-              { name: 'Science', icon: '/assets/generated/science-icon.dim_64x64.png' },
-              { name: 'Social Studies', icon: '/assets/generated/social-studies-icon.dim_64x64.png' },
-            ].map((subject) => (
-              <div key={subject.name} className="flex items-center gap-3 rounded-lg border p-3 sm:p-4">
-                <img src={subject.icon} alt={subject.name} className="h-8 w-8 flex-shrink-0 rounded object-contain sm:h-10 sm:w-10" />
-                <span className="text-sm font-medium sm:text-base">{subject.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      ),
+      content: isTeacher
+        ? 'Browse our library of pre-made lessons or create your own custom content. Organize lessons by subject (History, Math, Language Arts, Science, Social Studies) and grade level (K-12).'
+        : 'Access lessons assigned to you across History, Math, Language Arts, Science, and Social Studies. Each lesson includes detailed content and instructions.',
     },
     {
-      title: 'Track Progress & Performance',
-      description: 'Monitor academic progress with visual dashboards and detailed analytics.',
+      title: 'Progress Tracking',
+      description: 'Monitor academic performance with visual dashboards',
       icon: <BarChart3 className="h-14 w-14 text-primary sm:h-16 sm:w-16" />,
       content: isTeacher
-        ? 'View student progress across all subjects, track assignment completion, and monitor grade trends over time. The Progress tab provides comprehensive insights into student performance.'
-        : 'Track your own progress across all subjects, see your assignment completion rates, and monitor your grade trends over time. The Progress tab helps you stay on top of your learning.',
+        ? 'View student progress at a glance with subject-specific averages and assignment completion rates. Track performance trends over time.'
+        : 'See your progress across all subjects with grade averages and completion status. Track your improvement over time with clear visual indicators.',
+    },
+    {
+      title: 'Grading & Assignments',
+      description: 'Manage assignments and grades efficiently',
+      icon: <GraduationCap className="h-14 w-14 text-primary sm:h-16 sm:w-16" />,
+      content: isTeacher
+        ? 'Assign lessons to students with due dates and descriptions. Grade submitted work and provide feedback. All grades are automatically calculated and tracked.'
+        : 'View your assignments with due dates and descriptions. Submit your work directly through the platform. See your grades and feedback from your teacher.',
     },
     {
       title: 'Premium Report Cards',
-      description: 'Unlock comprehensive report card features for just $5 every 9 weeks.',
-      icon: <GraduationCap className="h-14 w-14 text-primary sm:h-16 sm:w-16" />,
-      content: (
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground sm:text-base">
-            All core features are free! Upgrade to premium for official report cards:
-          </p>
-          <ul className="space-y-2.5 text-sm sm:text-base">
-            <li className="flex items-start gap-2.5">
-              <FileText className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary sm:h-5 sm:w-5" />
-              <span>Generate comprehensive report cards with subject breakdowns</span>
-            </li>
-            <li className="flex items-start gap-2.5">
-              <FileText className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary sm:h-5 sm:w-5" />
-              <span>Printable and shareable professional reports</span>
-            </li>
-            <li className="flex items-start gap-2.5">
-              <FileText className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary sm:h-5 sm:w-5" />
-              <span>Automated grade tracking and analytics</span>
-            </li>
-          </ul>
-          <p className="text-xs text-muted-foreground sm:text-sm">
-            No hidden fees. Cancel anytime and retain access until your current subscription period ends.
-          </p>
-        </div>
-      ),
+      description: `Unlock comprehensive reports for ${PREMIUM_PRICE_DISPLAY} every ${PREMIUM_DURATION_DISPLAY}`,
+      icon: <FileText className="h-14 w-14 text-primary sm:h-16 sm:w-16" />,
+      content: `Generate professional report cards with detailed subject breakdowns and performance analytics. Premium access includes unlimited report card generation, printable formats, and historical tracking. Just ${PREMIUM_PRICE_DISPLAY} every ${PREMIUM_DURATION_DISPLAY} with no hidden fees or automatic renewals.`,
     },
   ];
 
@@ -127,25 +95,25 @@ export default function OnboardingGuide({ isOpen, onClose, isTeacher }: Onboardi
   const currentStepData = steps[currentStep];
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleSkip()}>
       <DialogContent className="max-w-2xl">
-        <DialogHeader className="space-y-4 sm:space-y-5">
+        <DialogHeader className="space-y-4">
           <div className="flex items-center justify-center">{currentStepData.icon}</div>
           <DialogTitle className="text-center text-xl sm:text-2xl">{currentStepData.title}</DialogTitle>
-          <DialogDescription className="text-center text-sm sm:text-base">{currentStepData.description}</DialogDescription>
+          <DialogDescription className="text-center text-sm sm:text-base">
+            {currentStepData.description}
+          </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[50vh] pr-4">
-          <div className="space-y-4 py-4 sm:space-y-5 sm:py-5">
-            {typeof currentStepData.content === 'string' ? (
-              <p className="text-sm text-muted-foreground sm:text-base">{currentStepData.content}</p>
-            ) : (
-              currentStepData.content
-            )}
+        <ScrollArea className="max-h-[300px] sm:max-h-[350px]">
+          <div className="space-y-5 px-1 py-2">
+            <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
+              {currentStepData.content}
+            </p>
           </div>
         </ScrollArea>
 
-        <div className="space-y-4 sm:space-y-5">
+        <div className="space-y-5">
           <div className="space-y-2.5">
             <div className="flex items-center justify-between text-xs text-muted-foreground sm:text-sm">
               <span>
@@ -156,11 +124,11 @@ export default function OnboardingGuide({ isOpen, onClose, isTeacher }: Onboardi
             <Progress value={progress} className="h-2" />
           </div>
 
-          <DialogFooter className="flex-col gap-2.5 sm:flex-row sm:gap-3">
-            <Button variant="outline" onClick={handleSkip} className="w-full sm:w-auto">
+          <DialogFooter className="flex-col gap-3 sm:flex-row sm:justify-between">
+            <Button variant="ghost" onClick={handleSkip} className="w-full sm:w-auto">
               Skip Tour
             </Button>
-            <div className="flex w-full gap-2.5 sm:w-auto sm:gap-3">
+            <div className="flex gap-3">
               {currentStep > 0 && (
                 <Button variant="outline" onClick={handlePrevious} className="flex-1 sm:flex-none">
                   Previous
@@ -176,4 +144,3 @@ export default function OnboardingGuide({ isOpen, onClose, isTeacher }: Onboardi
     </Dialog>
   );
 }
-

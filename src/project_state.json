@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 11,
+  "projectStateVersion": 13,
   "summary": "App requiring separate sign-in flows for educators/parents vs students",
   "architectural_notes": [
     "Deployment/publishing workflow: user requested to publish the app after applying the latest update (toggle backend maintenance mode from unpublished to published after build).",
@@ -105,6 +105,22 @@
         "REQ-14"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-ensure-the-stripe-checkout-session-for-premium-report-card-access-charges-exactly-5-00-usd-500-cents-by-sending-500-cents-as-the-line-item-amount-when-creating-a-checkout-session-from-the-frontend",
+      "title": "Ensure the Stripe checkout session for Premium Report Card Access charges exactly $5.00 USD (500 cents) by sending 500 cents as the line-item amount when creating a checkout session from the frontend.",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-any-user-facing-price-formatting-for-premium-report-cards-to-display-5-00-two-decimal-places-wherever-the-premium-price-is-shown-in-the-ui",
+      "title": "Update any user-facing price formatting for Premium Report Cards to display “$5.00” (two decimal places) wherever the premium price is shown in the UI.",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -161,6 +177,20 @@
       "summary": "Update any backend-provided premium price strings shown in preview/onboarding data (e.g., App Store preview / onboarding guide premium sections) so they describe $5 every 9 weeks in clear English.",
       "reqIds": [
         "REQ-16"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-11",
+      "summary": "Change the actual amount charged (payment price) to $5.00",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-13",
+      "summary": "Enforce the $5.00 (500 cents) price on the backend for Premium Report Card Access by validating incoming checkout line items and rejecting any attempt to create a checkout session with a different amount for that product.",
+      "reqIds": [
+        "REQ-18"
       ],
       "status": "pending"
     }

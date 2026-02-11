@@ -1,87 +1,68 @@
 {
   "kind": "build_request",
-  "title": "Update premium pricing cadence to $5 every 9 weeks",
+  "title": "Set Stripe charge amount to $5.00 for Premium Report Cards",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-13",
-      "text": "Update all user-facing premium pricing copy to state that Premium Report Cards cost $5 billed every 9 weeks (replace any existing “every 3 months” / “/ 3 months” messaging wherever it appears).",
+      "id": "REQ-17",
+      "text": "Ensure the Stripe checkout session for Premium Report Card Access charges exactly $5.00 USD (500 cents) by sending 500 cents as the line-item amount when creating a checkout session from the frontend.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6"
+          "msg-5"
         ],
         "quotes": [
-          "update the pricing to every 9 weeks at $5"
+          "change amount charged to $5.00"
         ]
       },
       "acceptanceCriteria": [
-        "The premium upsell banner copy says \"$5 every 9 weeks\" (and does not mention \"3 months\").",
-        "The Report Cards upgrade screen shows \"$5 / 9 weeks\" (or equivalent clear English) instead of \"$5 / 3 months\".",
-        "No other frontend screens mention the old premium billing cadence (\"3 months\")."
+        "When starting the Premium upgrade flow, the checkout session request includes a single line item with priceInCents = 500 (USD) and quantity = 1.",
+        "No frontend code path sends a different priceInCents value for Premium Report Card Access."
       ]
     },
     {
-      "id": "REQ-14",
-      "text": "Update the checkout line-item metadata sent to the backend so that the product description reflects a 9-week access period at $5 (e.g., replace “3 months access to report card features” with “9 weeks access to report card features”).",
+      "id": "REQ-18",
+      "text": "Enforce the $5.00 (500 cents) price on the backend for Premium Report Card Access by validating incoming checkout line items and rejecting any attempt to create a checkout session with a different amount for that product.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-5"
+        ],
+        "quotes": [
+          "change amount charged to $5.00"
+        ]
+      },
+      "acceptanceCriteria": [
+        "If a caller tries to create a checkout session for Premium Report Card Access with priceInCents other than 500, the backend rejects the request with a clear error.",
+        "A normal premium checkout flow succeeds when priceInCents is 500."
+      ]
+    },
+    {
+      "id": "REQ-19",
+      "text": "Update any user-facing price formatting for Premium Report Cards to display “$5.00” (two decimal places) wherever the premium price is shown in the UI.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6"
+          "msg-5"
         ],
         "quotes": [
-          "update the pricing to every 9 weeks at $5"
+          "change amount charged to $5.00"
         ]
       },
       "acceptanceCriteria": [
-        "When starting checkout, the item description reflects “9 weeks” rather than “3 months”.",
-        "The checkout amount remains $5 (500 cents)."
-      ]
-    },
-    {
-      "id": "REQ-15",
-      "text": "Update the backend premium access duration so that newly granted/purchased premium access lasts 9 weeks (instead of the current ~3-month duration), while keeping the price at 500 cents.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-6"
-        ],
-        "quotes": [
-          "update the pricing to every 9 weeks at $5"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Backend constant(s) controlling premium access duration are updated so new premium access expires 9 weeks after it is granted.",
-        "Backend premium price remains 500 cents.",
-        "Existing premium access records are not invalidated or modified; only future grants/purchases use the new 9-week duration."
-      ]
-    },
-    {
-      "id": "REQ-16",
-      "text": "Update any backend-provided premium price strings shown in preview/onboarding data (e.g., App Store preview / onboarding guide premium sections) so they describe $5 every 9 weeks in clear English.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-6"
-        ],
-        "quotes": [
-          "update the pricing to every 9 weeks at $5"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Any premium price text fields returned by backend preview/onboarding APIs mention “$5 every 9 weeks” and do not mention “3 months”."
+        "Premium pricing UI text displays “$5.00” (not “$5”) wherever the premium price is shown.",
+        "All updated user-facing text remains in English."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under frontend/src/components/ui (compose them instead).",
-    "Do not modify any files listed as immutable by SYSTEM_CONTEXT (e.g., frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, frontend/src/main.tsx).",
-    "Backend must remain a single-actor Motoko canister; keep all logic in backend/main.mo and only add backend/migration.mo if a state migration is strictly necessary."
+    "Do not edit files under frontend/src/components/ui (read-only).",
+    "Do not edit frontend/src/hooks/useInternetIdentity.ts or frontend/src/hooks/useActor.ts (immutable paths).",
+    "Backend must remain a single Motoko actor in backend/main.mo; only add backend/migration.mo if state migration is truly required."
   ],
   "nonGoals": [
-    "Do not change the premium price amount (it remains $5 / 500 cents).",
-    "Do not add new payment providers or authentication methods.",
-    "Do not redesign the premium feature set; only update pricing cadence and related text/duration."
+    "Changing the premium access duration (e.g., 9 weeks) beyond what is needed to enforce the $5.00 charge amount.",
+    "Adding new payment providers or authentication methods."
   ],
   "imageRequirements": {
     "required": [],

@@ -1,44 +1,27 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T18:20:58.583Z",
-  "summary": "Frontend updates in PremiumBanner, OnboardingGuide, and checkout item metadata show the new “$5 every 9 weeks” / “9 weeks access” messaging. However, the diff provides no clear evidence that the backend premium access duration and backend-provided premium pricing strings were updated, and it’s not fully verifiable from the provided snippets that all remaining frontend references to “3 months” (including the Report Cards upgrade UI pricing display) were removed/updated.",
+  "generatedAt": "2026-02-11T18:30:42.102Z",
+  "summary": "Frontend now centralizes Premium Report Card pricing in a new constants module (500 cents, \"$5.00\") and uses it in the upgrade/checkout flow and UI copy. However, the diff summary does not show any backend-side validation/enforcement that rejects non-$5.00 amounts for the Premium product when creating a Stripe checkout session.",
   "missing_requirements": [
     {
-      "id": "REQ-13",
-      "requirement": "Update all user-facing premium pricing copy to state that Premium Report Cards cost $5 billed every 9 weeks (and remove all “3 months” mentions), including the Report Cards upgrade screen showing \"$5 / 9 weeks\" (or equivalent).",
-      "reason": "The diff shows some updated copy (PremiumBanner, OnboardingGuide), but the provided ReportCardsTab.tsx snippet does not include any visible on-screen pricing text update (only the checkout item metadata), and there’s no evidence confirming removal of “3 months” messaging across all other frontend screens.",
-      "evidence": [
-        "frontend/src/components/PremiumBanner.tsx",
-        "frontend/src/components/OnboardingGuide.tsx",
-        "frontend/src/components/ReportCardsTab.tsx (snippet shows checkout item description change but not the UI price display)"
-      ]
-    },
-    {
-      "id": "REQ-15",
-      "requirement": "Update the backend premium access duration so newly granted/purchased premium access lasts 9 weeks (price stays 500 cents; do not modify existing access records).",
-      "reason": "backend/main.mo is truncated and the shown portion does not include any premium-duration constants or premium-grant logic changes; no other backend file (e.g., migration) was added.",
-      "evidence": [
-        "backend/main.mo"
-      ]
-    },
-    {
-      "id": "REQ-16",
-      "requirement": "Update any backend-provided premium price strings shown in preview/onboarding data so they describe “$5 every 9 weeks” and do not mention “3 months”.",
-      "reason": "backend/main.mo is truncated and the shown portion contains type definitions but no evidence of updated backend-returned premium price strings.",
+      "id": "REQ-18",
+      "requirement": "Enforce the $5.00 (500 cents) price on the backend for Premium Report Card Access by validating incoming checkout line items and rejecting any attempt to create a checkout session with a different amount for that product.",
+      "reason": "The provided backend/main.mo snippet shows no evidence of validating incoming checkout line items or trapping/rejecting when priceInCents != 500 for the Premium product. The diff summary is truncated and does not include any Stripe checkout-session creation/validation logic changes demonstrating this enforcement.",
       "evidence": [
         "backend/main.mo"
       ]
     }
   ],
   "hallucinated_features": [],
-  "confidence": 0.55,
+  "confidence": 0.62,
   "changed_files": [
     "backend/main.mo",
     "frontend-file-summaries.txt",
     "frontend/src/components/OnboardingGuide.tsx",
     "frontend/src/components/PremiumBanner.tsx",
     "frontend/src/components/ReportCardsTab.tsx",
+    "frontend/src/constants/premiumPricing.ts",
     "project_state.json"
   ]
 }

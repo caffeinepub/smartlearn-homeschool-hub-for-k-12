@@ -337,6 +337,21 @@ actor {
     switch (configuration) {
       case (null) { Runtime.trap("Stripe needs to be first configured") };
       case (?config) {
+        // Validate premium product price
+        let valid = items.all(
+          func(item) {
+            if (item.productName == "Premium Report Card Access") {
+              item.priceInCents == premiumPriceCents;
+            } else {
+              true;
+            };
+          }
+        );
+
+        if (not valid) {
+          Runtime.trap("Failed: Price must be $" # (premiumPriceCents / 100).toText() # ".");
+        };
+
         await Stripe.createCheckoutSession(config, caller, items, successUrl, cancelUrl, transform);
       };
     };

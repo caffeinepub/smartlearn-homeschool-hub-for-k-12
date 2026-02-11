@@ -10,6 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Loader2, FileText, Crown, Calendar, TrendingUp, Award, XCircle, Shield, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import StripeSetup from './StripeSetup';
+import { createPremiumCheckoutItems, PREMIUM_PRICE_DISPLAY, PREMIUM_DURATION_DISPLAY } from '../constants/premiumPricing';
 
 interface ReportCardsTabProps {
   isTeacher: boolean;
@@ -48,21 +49,17 @@ export default function ReportCardsTab({ isTeacher }: ReportCardsTabProps) {
 
     try {
       const baseUrl = `${window.location.protocol}//${window.location.host}`;
-      const items = [
-        {
-          currency: 'usd',
-          productName: 'Premium Report Card Access',
-          productDescription: '9 weeks access to report card features',
-          priceInCents: BigInt(500),
-          quantity: BigInt(1),
-        },
-      ];
+      const items = createPremiumCheckoutItems();
 
       const session = await createCheckoutSession.mutateAsync({
         items,
         successUrl: `${baseUrl}/payment-success`,
         cancelUrl: `${baseUrl}/payment-cancel`,
       });
+
+      if (!session?.url) {
+        throw new Error('Stripe session missing url');
+      }
 
       window.location.href = session.url;
     } catch (error: any) {
@@ -144,8 +141,8 @@ export default function ReportCardsTab({ isTeacher }: ReportCardsTabProps) {
 
             <div className="text-center">
               <div className="mb-5">
-                <span className="text-3xl font-bold sm:text-4xl">$5</span>
-                <span className="text-sm text-muted-foreground sm:text-base"> / 9 weeks</span>
+                <span className="text-3xl font-bold sm:text-4xl">{PREMIUM_PRICE_DISPLAY}</span>
+                <span className="text-sm text-muted-foreground sm:text-base"> / {PREMIUM_DURATION_DISPLAY}</span>
               </div>
               <Button onClick={handleUpgrade} size="lg" className="w-full" disabled={createCheckoutSession.isPending}>
                 {createCheckoutSession.isPending ? (
@@ -352,4 +349,3 @@ function ReportCardDisplay({ reportCard }: { reportCard: any }) {
     </Card>
   );
 }
-
