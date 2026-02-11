@@ -42,6 +42,10 @@ export interface NavigationInstructions {
     progressIndicator: string;
     nextButton: string;
 }
+export interface LessonPlanDraft {
+    title: string;
+    content: string;
+}
 export type GradeLevel = bigint;
 export interface HeroSection {
     title: string;
@@ -82,19 +86,14 @@ export interface PremiumUpgradeSection {
     benefits: Array<string>;
     price: string;
 }
-export type AssignmentId = bigint;
-export interface Assignment {
-    lessonId: LessonId;
-    title: string;
-    studentId: StudentId;
-    assignedBy: TeacherId;
-    completed: boolean;
-    dueDate: Time;
-    description: string;
-    grade?: bigint;
-    assignmentId: AssignmentId;
-    submission?: string;
+export interface LessonPlanRequest {
+    topic?: string;
+    constraints?: string;
+    subject: string;
+    standards?: string;
+    gradeLevel: bigint;
 }
+export type AssignmentId = bigint;
 export type StripeSessionStatus = {
     __kind__: "completed";
     completed: {
@@ -110,6 +109,18 @@ export type StripeSessionStatus = {
 export interface StripeConfiguration {
     allowedCountries: Array<string>;
     secretKey: string;
+}
+export interface Assignment {
+    lessonId: LessonId;
+    title: string;
+    studentId: StudentId;
+    assignedBy: TeacherId;
+    completed: boolean;
+    dueDate: Time;
+    description: string;
+    grade?: bigint;
+    assignmentId: AssignmentId;
+    submission?: string;
 }
 export interface Subject {
     name: string;
@@ -195,6 +206,7 @@ export interface backendInterface {
     createCheckoutSession(items: Array<ShoppingItem>, successUrl: string, cancelUrl: string): Promise<string>;
     createCustomLesson(title: string, subject: Subject, gradeLevel: GradeLevel, content: string): Promise<LessonId>;
     createLessonFromLibrary(libraryLessonId: LessonId): Promise<LessonId>;
+    generateAiLessonPlanDraft(request: LessonPlanRequest): Promise<LessonPlanDraft>;
     generateReportCard(studentId: StudentId): Promise<ReportCardId>;
     getAllReportCardsForStudent(studentId: StudentId): Promise<Array<ReportCard>>;
     getAppMarketListing(): Promise<AppMarketListing>;

@@ -1,27 +1,37 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T18:30:42.102Z",
-  "summary": "Frontend now centralizes Premium Report Card pricing in a new constants module (500 cents, \"$5.00\") and uses it in the upgrade/checkout flow and UI copy. However, the diff summary does not show any backend-side validation/enforcement that rejects non-$5.00 amounts for the Premium product when creating a Stripe checkout session.",
+  "generatedAt": "2026-02-11T19:20:33.848Z",
+  "summary": "REQ-24 (Upload Lesson) appears implemented on the frontend via a new upload utility and additions to LessonPlansTab. Role-based access updates for Educator/Parent vs Student appear partially addressed in the Dashboard/LessonPlansTab interface, but backend-side authorization/error-string updates for lesson-plan creation are not evidenced in the provided diff. The diff also includes app publish/unpublish (maintenance mode) functionality that is not part of this BuildRequest.",
   "missing_requirements": [
     {
-      "id": "REQ-18",
-      "requirement": "Enforce the $5.00 (500 cents) price on the backend for Premium Report Card Access by validating incoming checkout line items and rejecting any attempt to create a checkout session with a different amount for that product.",
-      "reason": "The provided backend/main.mo snippet shows no evidence of validating incoming checkout line items or trapping/rejecting when priceInCents != 500 for the Premium product. The diff summary is truncated and does not include any Stripe checkout-session creation/validation logic changes demonstrating this enforcement.",
+      "id": "REQ-25",
+      "requirement": "Improve any backend trap/error strings surfaced to end users for lesson-plan creation so they do not misleadingly say “teachers only” when permission is tied to Educator/Parent (admin).",
+      "reason": "The diff shows backend/main.mo changes, but the provided snippet contains publish/unpublish authorization strings and does not show any lesson-plan creation authorization checks or error/trap strings being updated. Since the file is truncated, this cannot be confirmed implemented.",
       "evidence": [
         "backend/main.mo"
       ]
     }
   ],
-  "hallucinated_features": [],
+  "hallucinated_features": [
+    {
+      "description": "Backend-controlled publish/unpublish (maintenance mode) endpoints and related frontend query/mutation hooks (publication status gating/admin publish controls).",
+      "reason": "Not requested in REQ-23/24/25 (the BuildRequest is scoped to lesson plan creation access and upload). The diff shows new/modified code around publication status and admin-only publish/unpublish actions.",
+      "evidence": [
+        "backend/main.mo",
+        "frontend/src/hooks/useQueries.ts",
+        "frontend-file-summaries.txt"
+      ]
+    }
+  ],
   "confidence": 0.62,
   "changed_files": [
     "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/OnboardingGuide.tsx",
-    "frontend/src/components/PremiumBanner.tsx",
-    "frontend/src/components/ReportCardsTab.tsx",
-    "frontend/src/constants/premiumPricing.ts",
+    "frontend/src/components/LessonPlansTab.tsx",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/Dashboard.tsx",
+    "frontend/src/utils/lessonUpload.ts",
     "project_state.json"
   ]
 }

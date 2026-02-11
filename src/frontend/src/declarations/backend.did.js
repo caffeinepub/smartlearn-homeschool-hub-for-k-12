@@ -26,6 +26,17 @@ export const ShoppingItem = IDL.Record({
 });
 export const Subject = IDL.Record({ 'name' : IDL.Text, 'subjectId' : IDL.Nat });
 export const GradeLevel = IDL.Nat;
+export const LessonPlanRequest = IDL.Record({
+  'topic' : IDL.Opt(IDL.Text),
+  'constraints' : IDL.Opt(IDL.Text),
+  'subject' : IDL.Text,
+  'standards' : IDL.Opt(IDL.Text),
+  'gradeLevel' : IDL.Nat,
+});
+export const LessonPlanDraft = IDL.Record({
+  'title' : IDL.Text,
+  'content' : IDL.Text,
+});
 export const ReportCardId = IDL.Nat;
 export const SubjectGrades = IDL.Record({
   'grades' : IDL.Vec(IDL.Nat),
@@ -192,6 +203,11 @@ export const idlService = IDL.Service({
       [],
     ),
   'createLessonFromLibrary' : IDL.Func([LessonId], [LessonId], []),
+  'generateAiLessonPlanDraft' : IDL.Func(
+      [LessonPlanRequest],
+      [LessonPlanDraft],
+      ['query'],
+    ),
   'generateReportCard' : IDL.Func([StudentId], [ReportCardId], []),
   'getAllReportCardsForStudent' : IDL.Func(
       [StudentId],
@@ -297,6 +313,17 @@ export const idlFactory = ({ IDL }) => {
   });
   const Subject = IDL.Record({ 'name' : IDL.Text, 'subjectId' : IDL.Nat });
   const GradeLevel = IDL.Nat;
+  const LessonPlanRequest = IDL.Record({
+    'topic' : IDL.Opt(IDL.Text),
+    'constraints' : IDL.Opt(IDL.Text),
+    'subject' : IDL.Text,
+    'standards' : IDL.Opt(IDL.Text),
+    'gradeLevel' : IDL.Nat,
+  });
+  const LessonPlanDraft = IDL.Record({
+    'title' : IDL.Text,
+    'content' : IDL.Text,
+  });
   const ReportCardId = IDL.Nat;
   const SubjectGrades = IDL.Record({
     'grades' : IDL.Vec(IDL.Nat),
@@ -457,6 +484,11 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'createLessonFromLibrary' : IDL.Func([LessonId], [LessonId], []),
+    'generateAiLessonPlanDraft' : IDL.Func(
+        [LessonPlanRequest],
+        [LessonPlanDraft],
+        ['query'],
+      ),
     'generateReportCard' : IDL.Func([StudentId], [ReportCardId], []),
     'getAllReportCardsForStudent' : IDL.Func(
         [StudentId],

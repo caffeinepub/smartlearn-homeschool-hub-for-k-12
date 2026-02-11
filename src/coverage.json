@@ -1,48 +1,52 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T18:30:42.105Z",
+  "generatedAt": "2026-02-11T19:20:33.852Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
     "total": 3,
-    "implemented": 2,
+    "implemented": 3,
     "items": [
       {
-        "id": "REQ-17",
-        "summary": "Ensure the Stripe checkout session for Premium Report Card Access charges exactly $5.00 USD (500 cents) by sending 500 cents as the line-item amount when creating a checkout session from the frontend.",
+        "id": "REQ-23",
+        "summary": "Ensure users who sign in as Educator/Parent (stored/created as the admin role) can access the full Lesson Plans creation features (Custom Lesson, AI Create Plan, and Library) in the same way as teachers, and ensure students cannot access lesson-plan creation controls.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/constants/premiumPricing.ts",
-          "frontend/src/components/ReportCardsTab.tsx"
+          "frontend/src/pages/Dashboard.tsx",
+          "frontend/src/components/LessonPlansTab.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/constants/premiumPricing.ts",
-          "frontend/src/components/ReportCardsTab.tsx"
+          "frontend/src/pages/Dashboard.tsx",
+          "frontend/src/components/LessonPlansTab.tsx"
         ]
       },
       {
-        "id": "REQ-18",
-        "summary": "Enforce the $5.00 (500 cents) price on the backend for Premium Report Card Access by validating incoming checkout line items and rejecting any attempt to create a checkout session with a different amount for that product.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-19",
-        "summary": "Update any user-facing price formatting for Premium Report Cards to display “$5.00” (two decimal places) wherever the premium price is shown in the UI.",
+        "id": "REQ-24",
+        "summary": "Add an “Upload Lesson” option inside the Lesson Plans “Create New Lesson Plan” dialog that lets an Educator/Parent create a lesson plan by uploading a local text-based file, extracting its contents on the client, and then saving it as a normal lesson plan using the existing create lesson plan flow.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/ReportCardsTab.tsx",
-          "frontend/src/components/PremiumBanner.tsx",
-          "frontend/src/components/OnboardingGuide.tsx"
+          "frontend/src/utils/lessonUpload.ts",
+          "frontend/src/components/LessonPlansTab.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/ReportCardsTab.tsx",
-          "frontend/src/components/PremiumBanner.tsx",
-          "frontend/src/components/OnboardingGuide.tsx"
+          "frontend/src/utils/lessonUpload.ts",
+          "frontend/src/components/LessonPlansTab.tsx"
+        ]
+      },
+      {
+        "id": "REQ-25",
+        "summary": "Verify that AI lesson plan draft generation and saving works for Educator/Parent users, and improve any user-facing authorization error messaging related to lesson plan creation so it does not refer to “teachers” only when the intended allowed role is Educator/Parent (admin).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/LessonPlansTab.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/LessonPlansTab.tsx"
         ]
       }
     ]
@@ -53,10 +57,10 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/OnboardingGuide.tsx",
-    "frontend/src/components/PremiumBanner.tsx",
-    "frontend/src/components/ReportCardsTab.tsx",
-    "frontend/src/constants/premiumPricing.ts",
+    "frontend/src/components/LessonPlansTab.tsx",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/Dashboard.tsx",
+    "frontend/src/utils/lessonUpload.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

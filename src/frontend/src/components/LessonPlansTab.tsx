@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useListAllLessonPlans, useGetSubjects, useCreateCustomLesson, useGetPreMadeLessons, useCreateLessonFromLibrary } from '../hooks/useQueries';
+import { useListAllLessonPlans, useGetSubjects, useCreateCustomLesson, useGetPreMadeLessons, useCreateLessonFromLibrary, useGenerateAiLessonPlanDraft } from '../hooks/useQueries';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -9,8 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, BookOpen, Loader2, Library } from 'lucide-react';
-import type { Subject, PreMadeLesson } from '../backend';
+import { Plus, BookOpen, Loader2, Library, Sparkles, Upload } from 'lucide-react';
+import type { Subject, PreMadeLesson, LessonPlanDraft } from '../backend';
+import { isSupportedFileType, deriveDefaultTitle, readFileAsText, getUnsupportedFileTypeError } from '../utils/lessonUpload';
+import { toast } from 'sonner';
 
 interface LessonPlansTabProps {
   isTeacher: boolean;
@@ -156,23 +158,33 @@ function LessonCard({ lesson, isTeacher }: { lesson: any; isTeacher: boolean }) 
 }
 
 function CreateLessonForm({ subjects, onSuccess }: { subjects: Subject[]; onSuccess: () => void }) {
-  const [activeTab, setActiveTab] = useState<'custom' | 'library'>('custom');
+  const [activeTab, setActiveTab] = useState<'custom' | 'library' | 'ai' | 'upload'>('custom');
 
   return (
     <>
       <DialogHeader className="space-y-3">
         <DialogTitle>Create New Lesson Plan</DialogTitle>
-        <DialogDescription>Create a custom lesson or choose from the pre-made library</DialogDescription>
+        <DialogDescription>Create a custom lesson, use AI to generate one, upload a file, or choose from the pre-made library</DialogDescription>
       </DialogHeader>
       
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'custom' | 'library')} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="custom">Custom Lesson</TabsTrigger>
-          <TabsTrigger value="library">Choose from Library</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'custom' | 'library' | 'ai' | 'upload')} className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="custom">Custom</TabsTrigger>
+          <TabsTrigger value="ai">AI Create</TabsTrigger>
+          <TabsTrigger value="upload">Upload</TabsTrigger>
+          <TabsTrigger value="library">Library</TabsTrigger>
         </TabsList>
         
         <TabsContent value="custom" className="mt-6">
           <CustomLessonForm subjects={subjects} onSuccess={onSuccess} />
+        </TabsContent>
+        
+        <TabsContent value="ai" className="mt-6">
+          <AiLessonForm subjects={subjects} onSuccess={onSuccess} />
+        </TabsContent>
+        
+        <TabsContent value="upload" className="mt-6">
+          <UploadLessonForm subjects={subjects} onSuccess={onSuccess} />
         </TabsContent>
         
         <TabsContent value="library" className="mt-6">
@@ -288,16 +300,382 @@ function CustomLessonForm({ subjects, onSuccess }: { subjects: Subject[]; onSucc
   );
 }
 
+function AiLessonForm({ subjects, onSuccess }: { subjects: Subject[]; onSuccess: () => void }) {
+  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+  const [gradeLevel, setGradeLevel] = useState('');
+  const [topic, setTopic] = useState('');
+  const [generatedDraft, setGeneratedDraft] = useState<LessonPlanDraft | null>(null);
+  const [editedTitle, setEditedTitle] = useState('');
+  const [editedContent, setEditedContent] = useState('');
+  
+  const { mutate: generateDraft, isPending: isGenerating } = useGenerateAiLessonPlanDraft();
+  const { mutate: createLesson, isPending: isSaving } = useCreateCustomLesson();
+
+  const handleGenerate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedSubject && gradeLevel) {
+      generateDraft(
+        {
+          subject: selectedSubject.name,
+          gradeLevel: BigInt(gradeLevel),
+          topic: topic || undefined,
+          standards: undefined,
+          constraints: undefined,
+        },
+        {
+          onSuccess: (draft) => {
+            setGeneratedDraft(draft);
+            setEditedTitle(draft.title);
+            setEditedContent(draft.content);
+          },
+        }
+      );
+    }
+  };
+
+  const handleSave = () => {
+    if (selectedSubject && gradeLevel && editedTitle && editedContent) {
+      createLesson(
+        {
+          title: editedTitle,
+          subject: selectedSubject,
+          gradeLevel: BigInt(gradeLevel),
+          content: editedContent,
+        },
+        {
+          onSuccess: () => {
+            setSelectedSubject(null);
+            setGradeLevel('');
+            setTopic('');
+            setGeneratedDraft(null);
+            setEditedTitle('');
+            setEditedContent('');
+            onSuccess();
+          },
+        }
+      );
+    }
+  };
+
+  return (
+    <div className="space-y-5 sm:space-y-6">
+      {!generatedDraft ? (
+        <form onSubmit={handleGenerate} className="space-y-5 sm:space-y-6">
+          <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
+            <Sparkles className="h-5 w-5 flex-shrink-0 text-primary" />
+            <p className="text-sm text-muted-foreground">
+              Our AI will generate a lesson plan draft based on your inputs. You can edit it before saving.
+            </p>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div className="space-y-2.5">
+              <Label htmlFor="ai-subject">Subject</Label>
+              <Select value={selectedSubject?.subjectId.toString() || ''} onValueChange={(value) => {
+                const subject = subjects.find((s) => s.subjectId.toString() === value);
+                setSelectedSubject(subject || null);
+              }}>
+                <SelectTrigger id="ai-subject">
+                  <SelectValue placeholder="Select subject" />
+                </SelectTrigger>
+                <SelectContent>
+                  {subjects.map((subject) => (
+                    <SelectItem key={subject.subjectId.toString()} value={subject.subjectId.toString()}>
+                      {subject.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2.5">
+              <Label htmlFor="ai-grade">Grade Level</Label>
+              <Select value={gradeLevel} onValueChange={setGradeLevel}>
+                <SelectTrigger id="ai-grade">
+                  <SelectValue placeholder="Select grade" />
+                </SelectTrigger>
+                <SelectContent>
+                  {GRADE_LEVELS.map((grade) => (
+                    <SelectItem key={grade.value} value={grade.value}>
+                      {grade.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2.5">
+            <Label htmlFor="ai-topic">Topic (Optional)</Label>
+            <Input
+              id="ai-topic"
+              placeholder="e.g., Photosynthesis, World War II, Fractions"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3">
+            <Button type="button" variant="outline" onClick={onSuccess}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isGenerating || !selectedSubject || !gradeLevel}>
+              {isGenerating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Generate Draft
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      ) : (
+        <div className="space-y-5 sm:space-y-6">
+          <div className="flex items-start gap-3 rounded-lg border border-green-500/20 bg-green-500/5 p-4">
+            <Sparkles className="h-5 w-5 flex-shrink-0 text-green-600" />
+            <p className="text-sm text-muted-foreground">
+              Draft generated! Review and edit the content below before saving.
+            </p>
+          </div>
+
+          <div className="space-y-2.5">
+            <Label htmlFor="edit-title">Lesson Title</Label>
+            <Input
+              id="edit-title"
+              value={editedTitle}
+              onChange={(e) => setEditedTitle(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-2.5">
+            <Label htmlFor="edit-content">Lesson Content</Label>
+            <Textarea
+              id="edit-content"
+              value={editedContent}
+              onChange={(e) => setEditedContent(e.target.value)}
+              rows={12}
+              required
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setGeneratedDraft(null);
+                setEditedTitle('');
+                setEditedContent('');
+              }}
+            >
+              Start Over
+            </Button>
+            <Button onClick={handleSave} disabled={isSaving || !editedTitle || !editedContent}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Lesson'
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function UploadLessonForm({ subjects, onSuccess }: { subjects: Subject[]; onSuccess: () => void }) {
+  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+  const [gradeLevel, setGradeLevel] = useState('');
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+  const { mutate: createLesson, isPending } = useCreateCustomLesson();
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!isSupportedFileType(file.name)) {
+      toast.error(getUnsupportedFileTypeError());
+      e.target.value = '';
+      return;
+    }
+
+    setIsProcessing(true);
+    setSelectedFile(file);
+
+    try {
+      const fileContent = await readFileAsText(file);
+      setContent(fileContent);
+      
+      // Derive default title from filename
+      const defaultTitle = deriveDefaultTitle(file.name);
+      setTitle(defaultTitle);
+      
+      toast.success('File uploaded successfully');
+    } catch (error) {
+      toast.error('Failed to read file content');
+      setSelectedFile(null);
+      e.target.value = '';
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (title && selectedSubject && gradeLevel && content) {
+      createLesson(
+        {
+          title,
+          subject: selectedSubject,
+          gradeLevel: BigInt(gradeLevel),
+          content,
+        },
+        {
+          onSuccess: () => {
+            setTitle('');
+            setSelectedSubject(null);
+            setGradeLevel('');
+            setContent('');
+            setSelectedFile(null);
+            onSuccess();
+          },
+        }
+      );
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
+      <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
+        <Upload className="h-5 w-5 flex-shrink-0 text-primary" />
+        <p className="text-sm text-muted-foreground">
+          Upload a text-based lesson plan file (.txt or .md). The content will be extracted and you can edit it before saving.
+        </p>
+      </div>
+
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div className="space-y-2.5">
+          <Label htmlFor="upload-subject">Subject</Label>
+          <Select value={selectedSubject?.subjectId.toString() || ''} onValueChange={(value) => {
+            const subject = subjects.find((s) => s.subjectId.toString() === value);
+            setSelectedSubject(subject || null);
+          }} required>
+            <SelectTrigger id="upload-subject">
+              <SelectValue placeholder="Select subject" />
+            </SelectTrigger>
+            <SelectContent>
+              {subjects.map((subject) => (
+                <SelectItem key={subject.subjectId.toString()} value={subject.subjectId.toString()}>
+                  {subject.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2.5">
+          <Label htmlFor="upload-grade">Grade Level</Label>
+          <Select value={gradeLevel} onValueChange={setGradeLevel} required>
+            <SelectTrigger id="upload-grade">
+              <SelectValue placeholder="Select grade" />
+            </SelectTrigger>
+            <SelectContent>
+              {GRADE_LEVELS.map((grade) => (
+                <SelectItem key={grade.value} value={grade.value}>
+                  {grade.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="space-y-2.5">
+        <Label htmlFor="file-upload">Upload File (.txt or .md)</Label>
+        <Input
+          id="file-upload"
+          type="file"
+          accept=".txt,.md"
+          onChange={handleFileChange}
+          disabled={isProcessing}
+          required={!content}
+        />
+        {selectedFile && (
+          <p className="text-xs text-muted-foreground">
+            Selected: {selectedFile.name}
+          </p>
+        )}
+      </div>
+
+      {content && (
+        <>
+          <div className="space-y-2.5">
+            <Label htmlFor="upload-title">Lesson Title</Label>
+            <Input
+              id="upload-title"
+              placeholder="e.g., Introduction to Algebra"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-2.5">
+            <Label htmlFor="upload-content">Lesson Content (Editable)</Label>
+            <Textarea
+              id="upload-content"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              rows={8}
+              required
+            />
+          </div>
+        </>
+      )}
+
+      <div className="flex justify-end gap-3 pt-3">
+        <Button type="button" variant="outline" onClick={onSuccess}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={isPending || isProcessing || !content}>
+          {isPending ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            'Save Lesson'
+          )}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 function LibraryLessonForm({ subjects, onSuccess }: { subjects: Subject[]; onSuccess: () => void }) {
   const { data: preMadeLessons, isLoading } = useGetPreMadeLessons();
   const { mutate: createFromLibrary, isPending } = useCreateLessonFromLibrary();
-  const [selectedSubject, setSelectedSubject] = useState<string>('all');
-  const [selectedGrade, setSelectedGrade] = useState<string>('all');
   const [selectedLesson, setSelectedLesson] = useState<PreMadeLesson | null>(null);
+  const [filterSubject, setFilterSubject] = useState<string>('all');
+  const [filterGrade, setFilterGrade] = useState<string>('all');
 
-  const filteredLessons = preMadeLessons?.filter((lesson) => {
-    const subjectMatch = selectedSubject === 'all' || lesson.subject.subjectId.toString() === selectedSubject;
-    const gradeMatch = selectedGrade === 'all' || lesson.gradeLevel.toString() === selectedGrade;
+  const filteredLibraryLessons = preMadeLessons?.filter((lesson) => {
+    const subjectMatch = filterSubject === 'all' || lesson.subject.subjectId.toString() === filterSubject;
+    const gradeMatch = filterGrade === 'all' || lesson.gradeLevel.toString() === filterGrade;
     return subjectMatch && gradeMatch;
   });
 
@@ -312,21 +690,13 @@ function LibraryLessonForm({ subjects, onSuccess }: { subjects: Subject[]; onSuc
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-5 sm:space-y-6">
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2.5">
-          <Label htmlFor="filterSubject">Filter by Subject</Label>
-          <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-            <SelectTrigger id="filterSubject">
+          <Label htmlFor="filter-subject">Filter by Subject</Label>
+          <Select value={filterSubject} onValueChange={setFilterSubject}>
+            <SelectTrigger id="filter-subject">
               <SelectValue placeholder="All subjects" />
             </SelectTrigger>
             <SelectContent>
@@ -341,9 +711,9 @@ function LibraryLessonForm({ subjects, onSuccess }: { subjects: Subject[]; onSuc
         </div>
 
         <div className="space-y-2.5">
-          <Label htmlFor="filterGrade">Filter by Grade</Label>
-          <Select value={selectedGrade} onValueChange={setSelectedGrade}>
-            <SelectTrigger id="filterGrade">
+          <Label htmlFor="filter-grade">Filter by Grade</Label>
+          <Select value={filterGrade} onValueChange={setFilterGrade}>
+            <SelectTrigger id="filter-grade">
               <SelectValue placeholder="All grades" />
             </SelectTrigger>
             <SelectContent>
@@ -358,50 +728,45 @@ function LibraryLessonForm({ subjects, onSuccess }: { subjects: Subject[]; onSuc
         </div>
       </div>
 
-      <div className="space-y-2.5">
-        <Label>Available Lessons</Label>
-        <div className="max-h-[400px] overflow-y-auto space-y-3 border rounded-md p-4">
-          {filteredLessons && filteredLessons.length > 0 ? (
-            filteredLessons.map((lesson) => {
-              const gradeLabel = GRADE_LEVELS.find((g) => g.value === lesson.gradeLevel.toString())?.label || 'Unknown';
-              const subjectIcon = SUBJECT_ICONS[lesson.subject.name];
-              const isSelected = selectedLesson?.lessonId === lesson.lessonId;
-
-              return (
-                <Card
-                  key={lesson.lessonId.toString()}
-                  className={`cursor-pointer transition-all ${isSelected ? 'ring-2 ring-primary' : 'hover:bg-accent'}`}
-                  onClick={() => setSelectedLesson(lesson)}
-                >
-                  <CardHeader className="p-5">
-                    <div className="flex items-start gap-3">
-                      {subjectIcon && (
-                        <img src={subjectIcon} alt={lesson.subject.name} className="h-8 w-8 flex-shrink-0 rounded object-contain" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="text-sm sm:text-base">{lesson.title}</CardTitle>
-                        <CardDescription className="text-xs sm:text-sm mt-1.5">
-                          {lesson.subject.name} • {gradeLabel}
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  {isSelected && (
-                    <CardContent className="p-5 pt-0">
-                      <p className="text-sm text-muted-foreground leading-relaxed">{lesson.content}</p>
-                    </CardContent>
-                  )}
-                </Card>
-              );
-            })
-          ) : (
-            <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
-              <Library className="mb-3 h-8 w-8" />
-              <p className="text-sm">No lessons found with the selected filters</p>
-            </div>
-          )}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </div>
+      ) : filteredLibraryLessons && filteredLibraryLessons.length > 0 ? (
+        <div className="max-h-[400px] space-y-3 overflow-y-auto rounded-lg border p-4">
+          {filteredLibraryLessons.map((lesson) => {
+            const gradeLabel = GRADE_LEVELS.find((g) => g.value === lesson.gradeLevel.toString())?.label || 'Unknown';
+            const isSelected = selectedLesson?.lessonId === lesson.lessonId;
+
+            return (
+              <Card
+                key={lesson.lessonId.toString()}
+                className={`cursor-pointer transition-all ${isSelected ? 'border-primary bg-primary/5' : 'hover:border-primary/50'}`}
+                onClick={() => setSelectedLesson(lesson)}
+              >
+                <CardHeader className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-sm">{lesson.title}</CardTitle>
+                      <CardDescription className="mt-1.5 text-xs">
+                        {lesson.subject.name} • {gradeLabel}
+                      </CardDescription>
+                    </div>
+                    {isSelected && (
+                      <Badge variant="default" className="text-xs">Selected</Badge>
+                    )}
+                  </div>
+                </CardHeader>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12">
+          <Library className="mb-3 h-10 w-10 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">No library lessons match your filters</p>
+        </div>
+      )}
 
       <div className="flex justify-end gap-3 pt-3">
         <Button type="button" variant="outline" onClick={onSuccess}>

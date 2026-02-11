@@ -68,6 +68,14 @@ export interface LessonPlan {
   'gradeLevel' : GradeLevel,
   'fromLibrary' : boolean,
 }
+export interface LessonPlanDraft { 'title' : string, 'content' : string }
+export interface LessonPlanRequest {
+  'topic' : [] | [string],
+  'constraints' : [] | [string],
+  'subject' : string,
+  'standards' : [] | [string],
+  'gradeLevel' : bigint,
+}
 export interface NavigationInstructions {
   'skipButton' : string,
   'progressIndicator' : string,
@@ -177,6 +185,10 @@ export interface _SERVICE {
     LessonId
   >,
   'createLessonFromLibrary' : ActorMethod<[LessonId], LessonId>,
+  'generateAiLessonPlanDraft' : ActorMethod<
+    [LessonPlanRequest],
+    LessonPlanDraft
+  >,
   'generateReportCard' : ActorMethod<[StudentId], ReportCardId>,
   'getAllReportCardsForStudent' : ActorMethod<[StudentId], Array<ReportCard>>,
   'getAppMarketListing' : ActorMethod<[], AppMarketListing>,

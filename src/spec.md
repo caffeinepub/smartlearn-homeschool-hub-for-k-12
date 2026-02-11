@@ -1,11 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Set Premium Report Card Access pricing to exactly $5.00 USD across Stripe checkout, backend validation, and UI display.
+**Goal:** Let Educator/Parent (admin role) users create lesson plans via custom entry, AI draft generation, library selection, and a new text-file upload path, while preventing Students from accessing any lesson-plan creation controls.
 
 **Planned changes:**
-- Update the frontend Premium upgrade checkout-session creation to send a single line item with priceInCents = 500 (USD) and quantity = 1.
-- Add backend validation to enforce Premium Report Card Access checkout sessions only allow priceInCents = 500, rejecting any other amount with a clear error.
-- Update any user-facing Premium price text to display “$5.00” (two decimal places) wherever shown.
+- Update Lesson Plans UI so role=admin (Educator/Parent) sees the full “Create Lesson Plan” experience (Custom, AI Create Plan, Library) and role=user (Student) sees no creation/upload controls.
+- Add an “Upload Lesson” option in the “Create New Lesson Plan” dialog for admin users that accepts supported text-based files (minimum .txt and .md), reads the content in-browser, and saves it through the existing lesson creation flow.
+- Ensure AI draft generation + save works for admin users and adjust any user-facing authorization/error text so it references Educator/Parent (admin) permissions rather than “teachers only,” with clear English errors when Students attempt restricted actions.
 
-**User-visible outcome:** Users see Premium Report Cards priced as “$5.00”, and the checkout flow reliably charges $5.00 with attempts to charge a different amount being rejected.
+**User-visible outcome:** Educator/Parents can create lesson plans (including uploading .txt/.md files and generating AI drafts) and save them to the lesson plan list; Students cannot access or trigger lesson plan creation features and will see a clear “not allowed” message if they try.

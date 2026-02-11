@@ -223,6 +223,19 @@ actor {
     preview : AppStorePreview;
   };
 
+  public type LessonPlanRequest = {
+    subject : Text;
+    gradeLevel : Nat;
+    topic : ?Text;
+    standards : ?Text;
+    constraints : ?Text;
+  };
+
+  public type LessonPlanDraft = {
+    title : Text;
+    content : Text;
+  };
+
   module LessonPlan {
     public func compare(a : LessonPlan, b : LessonPlan) : Order.Order {
       if (a.lessonId < b.lessonId) { #less } else if (a.lessonId > b.lessonId) {
@@ -485,7 +498,7 @@ actor {
     checkPublished();
 
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only teachers/admins can create lesson plans");
+      Runtime.trap("Unauthorized: Only educators/parents can create lesson plans");
     };
 
     let lessonId = nextLessonId;
@@ -509,7 +522,7 @@ actor {
     checkPublished();
 
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only teachers/admins can create lesson plans from library");
+      Runtime.trap("Unauthorized: Only educators/parents can create lesson plans from library");
     };
 
     switch (preMadeLessons.get(libraryLessonId)) {
@@ -572,7 +585,7 @@ actor {
     checkPublished();
 
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only teachers/admins can assign lessons");
+      Runtime.trap("Unauthorized: Only educators/parents can assign lessons");
     };
 
     let assignmentId = nextAssignmentId;
@@ -653,7 +666,7 @@ actor {
     checkPublished();
 
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only teachers/admins can submit assignments with grades");
+      Runtime.trap("Unauthorized: Only educators/parents can submit assignments with grades");
     };
 
     switch (assignments.get(assignmentId)) {
@@ -675,7 +688,7 @@ actor {
     checkPublished();
 
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only teachers/admins can grade assignments");
+      Runtime.trap("Unauthorized: Only educators/parents can grade assignments");
     };
 
     switch (assignments.get(assignmentId)) {
@@ -1197,6 +1210,49 @@ actor {
         skipButton = "Skip";
         progressIndicator = "Step {0} of {1}";
       };
+    };
+  };
+
+  // New backend AI-style lesson plan generator (no external API call)
+  public query ({ caller }) func generateAiLessonPlanDraft(request : LessonPlanRequest) : async LessonPlanDraft {
+    checkPublished();
+
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap(
+        "Unauthorized: Only educators/parents can generate AI lesson plan drafts"
+      );
+    };
+    // Compose lesson plan title
+    let topic =
+      switch (request.topic) {
+        case (null) { "" };
+        case (?t) { ": " # t };
+      };
+
+    let gradeLevel = if (request.gradeLevel == 0) {
+      "Pre-K";
+    } else {
+      "Grade " # request.gradeLevel.toText();
+    };
+
+    let title = request.subject # " " # gradeLevel # topic;
+
+    // Compose lesson content
+    let standardsText = switch (request.standards) {
+      case (null) { "" };
+      case (?s) { "Aligns with standards: " # s # ".\n" };
+    };
+
+    let constraintsText = switch (request.constraints) {
+      case (null) { "" };
+      case (?c) { "Special constraints: " # c # ".\n" };
+    };
+
+    let content = "Lesson Objectives:\n- Introduce " # request.subject # " concepts for " # gradeLevel # ".\n" # standardsText # constraintsText # "\nActivities:\n1. Introductory lecture\n2. Interactive exercises\n3. Group discussion\n\nAssessment:\n- Quiz and project submission\n\nMaterials:\n- Worksheets, reference books, online resources";
+
+    {
+      title;
+      content;
     };
   };
 };

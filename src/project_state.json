@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 13,
+  "projectStateVersion": 17,
   "summary": "App requiring separate sign-in flows for educators/parents vs students",
   "architectural_notes": [
     "Deployment/publishing workflow: user requested to publish the app after applying the latest update (toggle backend maintenance mode from unpublished to published after build).",
@@ -121,6 +121,46 @@
         "REQ-19"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-expose-the-new-lesson-plan-draft-generator-in-the-frontend-under-lesson-plans-so-teachers-can-generate-a-plan-and-then-create-save-it-as-a-normal-lesson-plan",
+      "title": "Expose the new lesson plan draft generator in the frontend under Lesson Plans so teachers can generate a plan and then create/save it as a normal lesson plan.",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-react-query-hook-s-for-the-ai-lesson-plan-draft-generation-api-and-ensure-queries-mutations-follow-existing-patterns-in-frontend-src-hooks-usequeries-ts-toasts-for-success-error-actor-availability-checks",
+      "title": "Add React Query hook(s) for the AI lesson plan draft generation API and ensure queries/mutations follow existing patterns in frontend/src/hooks/useQueries.ts (toasts for success/error, actor availability checks).",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-users-who-sign-in-as-educator-parent-stored-created-as-the-admin-role-can-access-the-full-lesson-plans-creation-features-custom-lesson-ai-create-plan-and-library-in-the-same-way-as-teachers-and-ensure-students-cannot-access-lesson-plan-creation-controls",
+      "title": "Ensure users who sign in as Educator/Parent (stored/created as the admin role) can access the full Lesson Plans creation features (Custom Lesson, AI Create Plan, and Library) in the same way as teachers, and ensure students cannot access lesson-plan creation controls.",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-upload-lesson-option-inside-the-lesson-plans-create-new-lesson-plan-dialog-that-lets-an-educator-parent-create-a-lesson-plan-by-uploading-a-local-text-based-file-extracting-its-contents-on-the-client-and-then-saving-it-as-a-normal-lesson-plan-using-the-existing-create-lesson-plan-flow",
+      "title": "Add an “Upload Lesson” option inside the Lesson Plans “Create New Lesson Plan” dialog that lets an Educator/Parent create a lesson plan by uploading a local text-based file, extracting its contents on the client, and then saving it as a normal lesson plan using the existing create lesson plan flow.",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-verify-that-ai-lesson-plan-draft-generation-and-saving-works-for-educator-parent-users-and-improve-any-user-facing-authorization-error-messaging-related-to-lesson-plan-creation-so-it-does-not-refer-to-teachers-only-when-the-intended-allowed-role-is-educator-parent-admin",
+      "title": "Verify that AI lesson plan draft generation and saving works for Educator/Parent users, and improve any user-facing authorization error messaging related to lesson plan creation so it does not refer to “teachers” only when the intended allowed role is Educator/Parent (admin).",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -192,6 +232,26 @@
       "reqIds": [
         "REQ-18"
       ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-14",
+      "summary": "Add an AI feature under Lesson Plans that can generate/create lesson plans",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-15",
+      "summary": "Add a new backend API that generates an AI-style lesson plan draft (title + content text) from user inputs (subject, grade level, and optional topic/standards/constraints), without calling any third-party AI/LLM service.",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-16",
+      "summary": "Allow parents (Educator/Parent role) to create lesson plans, upload lesson plans, and generate AI lesson plans within the Lesson Plans section",
+      "reqIds": [],
       "status": "pending"
     }
   ],

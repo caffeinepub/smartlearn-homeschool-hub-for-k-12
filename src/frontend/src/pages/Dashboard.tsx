@@ -18,7 +18,7 @@ interface DashboardProps {
 export default function Dashboard({ userProfile }: DashboardProps) {
   const [activeTab, setActiveTab] = useState('lessons');
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const isTeacher = userProfile.role === UserRole.admin;
+  const isEducatorParent = userProfile.role === UserRole.admin;
 
   useEffect(() => {
     if (!hasCompletedOnboarding()) {
@@ -40,7 +40,7 @@ export default function Dashboard({ userProfile }: DashboardProps) {
         <div className="flex-1">
           <h1 className="text-xl font-bold sm:text-2xl md:text-3xl">Welcome back, {userProfile.name}!</h1>
           <p className="mt-2 text-xs text-muted-foreground sm:text-sm">
-            {isTeacher ? 'Manage your lessons and track student progress' : 'View your lessons and track your progress'}
+            {isEducatorParent ? 'Manage your lessons and track student progress' : 'View your lessons and track your progress'}
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={handleOpenOnboarding} className="flex items-center gap-2 self-start text-xs sm:self-auto sm:text-sm">
@@ -79,23 +79,23 @@ export default function Dashboard({ userProfile }: DashboardProps) {
         </TabsList>
 
         <TabsContent value="lessons" className="overflow-y-auto space-y-5 sm:space-y-6 md:space-y-7">
-          <LessonPlansTab isTeacher={isTeacher} />
+          <LessonPlansTab isTeacher={isEducatorParent} />
         </TabsContent>
 
         <TabsContent value="assignments" className="overflow-y-auto space-y-5 sm:space-y-6 md:space-y-7">
-          <AssignmentsTab isTeacher={isTeacher} />
+          <AssignmentsTab isTeacher={isEducatorParent} />
         </TabsContent>
 
         <TabsContent value="progress" className="overflow-y-auto space-y-5 sm:space-y-6 md:space-y-7">
-          <ProgressTab isTeacher={isTeacher} />
+          <ProgressTab isTeacher={isEducatorParent} />
         </TabsContent>
 
         <TabsContent value="reports" className="overflow-y-auto space-y-5 sm:space-y-6 md:space-y-7">
-          <ReportCardsTab isTeacher={isTeacher} />
+          <ReportCardsTab isTeacher={isEducatorParent} />
         </TabsContent>
       </Tabs>
 
-      <OnboardingGuide isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} isTeacher={isTeacher} />
+      <OnboardingGuide isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} isTeacher={isEducatorParent} />
     </div>
   );
 }

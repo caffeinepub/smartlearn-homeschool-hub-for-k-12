@@ -2,11 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-ensure-the-stripe-checkout-session-for-premium-report-card-access-charges-exactly-5-00-usd-500-cents-by-sending-500-cents-as-the-line-item-amount-when-creating-a-checkout-session-from-the-frontend",
-      "featureTitle": "Ensure the Stripe checkout session for Premium Report Card Access charges exactly $5.00 USD (500 cents) by sending 500 cents as the line-item amount when creating a checkout session from the frontend.",
+      "featureId": "feature-ensure-users-who-sign-in-as-educator-parent-stored-created-as-the-admin-role-can-access-the-full-lesson-plans-creation-features-custom-lesson-ai-create-plan-and-library-in-the-same-way-as-teachers-and-ensure-students-cannot-access-lesson-plan-creation-controls",
+      "featureTitle": "Ensure users who sign in as Educator/Parent (stored/created as the admin role) can access the full Lesson Plans creation features (Custom Lesson, AI Create Plan, and Library) in the same way as teachers, and ensure students cannot access lesson-plan creation controls.",
       "files": [
-        "frontend/src/components/ReportCardsTab.tsx",
-        "frontend/src/constants/premiumPricing.ts"
+        "frontend/src/components/LessonPlansTab.tsx",
+        "frontend/src/pages/Dashboard.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -19,17 +19,16 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-17"
+        "REQ-23"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-any-user-facing-price-formatting-for-premium-report-cards-to-display-5-00-two-decimal-places-wherever-the-premium-price-is-shown-in-the-ui",
-      "featureTitle": "Update any user-facing price formatting for Premium Report Cards to display “$5.00” (two decimal places) wherever the premium price is shown in the UI.",
+      "featureId": "feature-add-an-upload-lesson-option-inside-the-lesson-plans-create-new-lesson-plan-dialog-that-lets-an-educator-parent-create-a-lesson-plan-by-uploading-a-local-text-based-file-extracting-its-contents-on-the-client-and-then-saving-it-as-a-normal-lesson-plan-using-the-existing-create-lesson-plan-flow",
+      "featureTitle": "Add an “Upload Lesson” option inside the Lesson Plans “Create New Lesson Plan” dialog that lets an Educator/Parent create a lesson plan by uploading a local text-based file, extracting its contents on the client, and then saving it as a normal lesson plan using the existing create lesson plan flow.",
       "files": [
-        "frontend/src/components/OnboardingGuide.tsx",
-        "frontend/src/components/PremiumBanner.tsx",
-        "frontend/src/components/ReportCardsTab.tsx"
+        "frontend/src/components/LessonPlansTab.tsx",
+        "frontend/src/utils/lessonUpload.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -42,7 +41,29 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-19"
+        "REQ-24"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-verify-that-ai-lesson-plan-draft-generation-and-saving-works-for-educator-parent-users-and-improve-any-user-facing-authorization-error-messaging-related-to-lesson-plan-creation-so-it-does-not-refer-to-teachers-only-when-the-intended-allowed-role-is-educator-parent-admin",
+      "featureTitle": "Verify that AI lesson plan draft generation and saving works for Educator/Parent users, and improve any user-facing authorization error messaging related to lesson plan creation so it does not refer to “teachers” only when the intended allowed role is Educator/Parent (admin).",
+      "files": [
+        "frontend/src/components/LessonPlansTab.tsx",
+        "frontend/src/hooks/useQueries.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-25"
       ],
       "confidence": "high"
     }

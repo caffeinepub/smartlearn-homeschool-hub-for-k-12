@@ -1,68 +1,76 @@
 {
   "kind": "build_request",
-  "title": "Set Stripe charge amount to $5.00 for Premium Report Cards",
+  "title": "Enable parents (Educator/Parent role) to create, upload, and AI-generate lesson plans",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-17",
-      "text": "Ensure the Stripe checkout session for Premium Report Card Access charges exactly $5.00 USD (500 cents) by sending 500 cents as the line-item amount when creating a checkout session from the frontend.",
+      "id": "REQ-23",
+      "text": "Ensure users who sign in as Educator/Parent (stored/created as the admin role) can access the full Lesson Plans creation features (Custom Lesson, AI Create Plan, and Library) in the same way as teachers, and ensure students cannot access lesson-plan creation controls.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-5"
+          "msg-1"
         ],
         "quotes": [
-          "change amount charged to $5.00"
+          "Allow parents to create lesson plans upload lesson plans and create ai lesson plans"
         ]
       },
       "acceptanceCriteria": [
-        "When starting the Premium upgrade flow, the checkout session request includes a single line item with priceInCents = 500 (USD) and quantity = 1.",
-        "No frontend code path sends a different priceInCents value for Premium Report Card Access."
+        "When the signed-in user has role=admin (Educator/Parent), the Lesson Plans tab shows the “Create Lesson Plan” button and the full creation dialog (Custom, AI, Library).",
+        "When the signed-in user has role=user (Student), the Lesson Plans tab does not show the “Create Lesson Plan” button or any creation/upload controls.",
+        "All user-facing text remains in English and is consistent with the Educator/Parent vs Student sign-in model already present in the app."
       ]
     },
     {
-      "id": "REQ-18",
-      "text": "Enforce the $5.00 (500 cents) price on the backend for Premium Report Card Access by validating incoming checkout line items and rejecting any attempt to create a checkout session with a different amount for that product.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-5"
-        ],
-        "quotes": [
-          "change amount charged to $5.00"
-        ]
-      },
-      "acceptanceCriteria": [
-        "If a caller tries to create a checkout session for Premium Report Card Access with priceInCents other than 500, the backend rejects the request with a clear error.",
-        "A normal premium checkout flow succeeds when priceInCents is 500."
-      ]
-    },
-    {
-      "id": "REQ-19",
-      "text": "Update any user-facing price formatting for Premium Report Cards to display “$5.00” (two decimal places) wherever the premium price is shown in the UI.",
+      "id": "REQ-24",
+      "text": "Add an “Upload Lesson” option inside the Lesson Plans “Create New Lesson Plan” dialog that lets an Educator/Parent create a lesson plan by uploading a local text-based file, extracting its contents on the client, and then saving it as a normal lesson plan using the existing create lesson plan flow.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-5"
+          "msg-1"
         ],
         "quotes": [
-          "change amount charged to $5.00"
+          "Allow parents to create lesson plans upload lesson plans and create ai lesson plans"
         ]
       },
       "acceptanceCriteria": [
-        "Premium pricing UI text displays “$5.00” (not “$5”) wherever the premium price is shown.",
-        "All updated user-facing text remains in English."
+        "The creation dialog includes a clearly labeled upload option (e.g., a 4th tab) for Educator/Parent users.",
+        "The upload flow requires the user to choose Subject and Grade Level (same as other creation paths).",
+        "The upload flow allows selecting a local file of a supported text-based format (at minimum: .txt and .md) and shows a clear validation error if the file type is unsupported.",
+        "On upload, the app reads the file content in the browser and uses it as the lesson content for saving.",
+        "The lesson title defaults to a sensible value (e.g., derived from filename) but remains editable before saving.",
+        "Clicking “Save” creates the lesson plan via the existing lesson creation mutation and the new lesson appears in the lesson plan list after success.",
+        "No uploaded file bytes are stored on the backend; only the extracted text content is saved as the lesson plan content."
+      ]
+    },
+    {
+      "id": "REQ-25",
+      "text": "Verify that AI lesson plan draft generation and saving works for Educator/Parent users, and improve any user-facing authorization error messaging related to lesson plan creation so it does not refer to “teachers” only when the intended allowed role is Educator/Parent (admin).",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Allow parents to create lesson plans upload lesson plans and create ai lesson plans"
+        ]
+      },
+      "acceptanceCriteria": [
+        "An Educator/Parent user can generate an AI draft, edit it, and save it as a lesson plan successfully.",
+        "If a Student attempts to invoke lesson plan creation actions (e.g., by manipulating the UI), the app shows a clear English error message indicating they are not allowed to perform that action.",
+        "Any backend trap/error strings that are surfaced to end users for lesson-plan creation do not misleadingly say “teachers only” when the permission is actually tied to the Educator/Parent (admin) role."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under frontend/src/components/ui (read-only).",
-    "Do not edit frontend/src/hooks/useInternetIdentity.ts or frontend/src/hooks/useActor.ts (immutable paths).",
-    "Backend must remain a single Motoko actor in backend/main.mo; only add backend/migration.mo if state migration is truly required."
+    "Backend must remain a single Motoko actor in backend/main.mo (no additional backend services).",
+    "Only generate backend/migration.mo changes if a state upgrade is required; avoid migrations for frontend-only changes.",
+    "Do not modify files under frontend/src/components/ui or other immutable frontend paths listed in SYSTEM_CONTEXT; compose existing UI components instead."
   ],
   "nonGoals": [
-    "Changing the premium access duration (e.g., 9 weeks) beyond what is needed to enforce the $5.00 charge amount.",
-    "Adding new payment providers or authentication methods."
+    "Supporting binary document parsing (e.g., PDF, DOCX) for lesson plan uploads.",
+    "Storing or serving uploaded original files from the backend (only extracted text is persisted as lesson content).",
+    "Adding third-party AI/LLM integrations for lesson plan generation."
   ],
   "imageRequirements": {
     "required": [],

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { useInternetIdentity } from './useInternetIdentity';
-import type { UserProfile, LessonPlan, Assignment, Subject, PreMadeLesson, ReportCard, ShoppingItem, StripeConfiguration, AppStorePreview, PublicationStatus } from '../backend';
+import type { UserProfile, LessonPlan, Assignment, Subject, PreMadeLesson, ReportCard, ShoppingItem, StripeConfiguration, AppStorePreview, PublicationStatus, LessonPlanRequest, LessonPlanDraft } from '../backend';
 import { UserRole } from '../backend';
 import { Principal } from '@dfinity/principal';
 import { toast } from 'sonner';
@@ -176,10 +176,15 @@ export function useCreateCustomLesson() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lessonPlans'] });
-      toast.success('Custom lesson created successfully');
+      toast.success('Lesson plan created successfully');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to create lesson: ${error.message}`);
+      const message = error.message.toLowerCase();
+      if (message.includes('unauthorized') || message.includes('only educators') || message.includes('only teachers')) {
+        toast.error('Only Educators/Parents can create lesson plans');
+      } else {
+        toast.error(`Failed to create lesson: ${error.message}`);
+      }
     },
   });
 }
@@ -198,7 +203,34 @@ export function useCreateLessonFromLibrary() {
       toast.success('Lesson added from library successfully');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to add lesson from library: ${error.message}`);
+      const message = error.message.toLowerCase();
+      if (message.includes('unauthorized') || message.includes('only educators') || message.includes('only teachers')) {
+        toast.error('Only Educators/Parents can add lessons from library');
+      } else {
+        toast.error(`Failed to add lesson from library: ${error.message}`);
+      }
+    },
+  });
+}
+
+export function useGenerateAiLessonPlanDraft() {
+  const { actor } = useActor();
+
+  return useMutation({
+    mutationFn: async (request: LessonPlanRequest): Promise<LessonPlanDraft> => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.generateAiLessonPlanDraft(request);
+    },
+    onSuccess: () => {
+      toast.success('AI lesson plan draft generated successfully');
+    },
+    onError: (error: Error) => {
+      const message = error.message.toLowerCase();
+      if (message.includes('unauthorized') || message.includes('only educators') || message.includes('only teachers')) {
+        toast.error('Only Educators/Parents can generate AI lesson plans');
+      } else {
+        toast.error(`Failed to generate lesson plan: ${error.message}`);
+      }
     },
   });
 }

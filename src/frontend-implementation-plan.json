@@ -1,50 +1,72 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix Premium Report Card Stripe price to $5.00 (500 cents) and align UI price display",
+  "title": "Educator/Parent lesson plan creation parity + upload flow",
   "requirements": [
     {
-      "id": "REQ-17",
-      "summary": "Send a fixed $5.00 (500 cents) line item when starting the Premium Report Card Stripe checkout flow from the frontend.",
+      "id": "REQ-23",
+      "summary": "Ensure Educator/Parent (admin) users can access full lesson plan creation UI while Students cannot see creation controls.",
       "acceptanceCriteria": [
-        "When starting the Premium upgrade flow, the checkout session request includes a single line item with priceInCents = 500 (USD) and quantity = 1.",
-        "No frontend code path sends a different priceInCents value for Premium Report Card Access."
+        "When the signed-in user has role=admin (Educator/Parent), the Lesson Plans tab shows the “Create Lesson Plan” button and the full creation dialog (Custom, AI, Library).",
+        "When the signed-in user has role=user (Student), the Lesson Plans tab does not show the “Create Lesson Plan” button or any creation/upload controls.",
+        "All user-facing text remains in English and is consistent with the Educator/Parent vs Student sign-in model already present in the app."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/constants/premiumPricing.ts",
-          "operation": "create",
-          "description": "Create a single source of truth for Premium Report Card pricing (e.g., PREMIUM_PRICE_CENTS = 500n, PREMIUM_CURRENCY = 'usd', PREMIUM_PRODUCT_NAME, PREMIUM_QUANTITY = 1n) and a helper to build the Stripe ShoppingItem array for checkout so no other code path can diverge."
+          "path": "frontend/src/pages/Dashboard.tsx",
+          "operation": "modify",
+          "description": "Align the lesson-plan creation permission flag with the app’s role model (admin=Educator/Parent, user=Student) and pass a clearly named prop to the LessonPlans tab so Students never receive creation-enabled UI."
         },
         {
-          "path": "frontend/src/components/ReportCardsTab.tsx",
+          "path": "frontend/src/components/LessonPlansTab.tsx",
           "operation": "modify",
-          "description": "Update the Premium upgrade flow to build checkout items exclusively from the shared premium pricing constants/helper so the request always sends exactly one line item with priceInCents=500 (USD) and quantity=1; continue redirecting via window.location.href. Use the existing Stripe checkout mutation (useCreateCheckoutSession) consistent with the selected \"stripe\" component. Verify the component's usage instructions before implementing."
+          "description": "Update the Lesson Plans UI gating to use the admin/Educator-Parent permission prop consistently (including the Create button and the creation dialog/tabs) and ensure labels remain English and consistent with the Educator/Parent vs Student model."
         }
       ]
     },
     {
-      "id": "REQ-19",
-      "summary": "Update all Premium Report Card price UI text to display “$5.00” (two decimals) wherever shown.",
+      "id": "REQ-24",
+      "summary": "Add an Upload Lesson option to the Create New Lesson Plan dialog that reads local text files client-side and saves via the existing lesson creation flow.",
       "acceptanceCriteria": [
-        "Premium pricing UI text displays “$5.00” (not “$5”) wherever the premium price is shown.",
-        "All updated user-facing text remains in English."
+        "The creation dialog includes a clearly labeled upload option (e.g., a 4th tab) for Educator/Parent users.",
+        "The upload flow requires the user to choose Subject and Grade Level (same as other creation paths).",
+        "The upload flow allows selecting a local file of a supported text-based format (at minimum: .txt and .md) and shows a clear validation error if the file type is unsupported.",
+        "On upload, the app reads the file content in the browser and uses it as the lesson content for saving.",
+        "The lesson title defaults to a sensible value (e.g., derived from filename) but remains editable before saving.",
+        "Clicking “Save” creates the lesson plan via the existing lesson creation mutation and the new lesson appears in the lesson plan list after success.",
+        "No uploaded file bytes are stored on the backend; only the extracted text content is saved as the lesson plan content."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/ReportCardsTab.tsx",
-          "operation": "modify",
-          "description": "Update the Premium upsell price display to show “$5.00” (two decimal places) and, where appropriate, use the shared display-price constant from frontend/src/constants/premiumPricing.ts to avoid drift."
+          "path": "frontend/src/utils/lessonUpload.ts",
+          "operation": "create",
+          "description": "Add small client-side helpers for validating supported text-based lesson file types (.txt, .md), deriving a default title from a filename, and reading file contents as text for the upload-to-lesson flow."
         },
         {
-          "path": "frontend/src/components/PremiumBanner.tsx",
+          "path": "frontend/src/components/LessonPlansTab.tsx",
           "operation": "modify",
-          "description": "Update the banner copy to display “$5.00” (two decimal places) and optionally reference the shared display-price constant from frontend/src/constants/premiumPricing.ts so the banner stays consistent with the checkout price."
+          "description": "Extend the Create New Lesson Plan dialog to include a 4th tab (e.g., “Upload Lesson”), implement the upload form (Subject + Grade Level + editable Title + file picker), validate .txt/.md, read file contents in-browser, and call the existing create custom lesson mutation to save."
+        }
+      ]
+    },
+    {
+      "id": "REQ-25",
+      "summary": "Ensure AI draft generation + saving works for Educator/Parent users and improve user-facing authorization error messaging for lesson plan creation actions.",
+      "acceptanceCriteria": [
+        "An Educator/Parent user can generate an AI draft, edit it, and save it as a lesson plan successfully.",
+        "If a Student attempts to invoke lesson plan creation actions (e.g., by manipulating the UI), the app shows a clear English error message indicating they are not allowed to perform that action.",
+        "Any backend trap/error strings that are surfaced to end users for lesson-plan creation do not misleadingly say “teachers only” when the permission is actually tied to the Educator/Parent (admin) role."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Normalize authorization-related errors surfaced via toast for lesson plan creation flows (create custom lesson, create from library, AI draft generation) so messages clearly state Educator/Parent (admin) is allowed and Students are not; avoid “teachers only” phrasing. Use the existing authorization component patterns for handling backend trap errors gracefully. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/components/OnboardingGuide.tsx",
+          "path": "frontend/src/components/LessonPlansTab.tsx",
           "operation": "modify",
-          "description": "Update the Premium onboarding step description text to display “$5.00” (two decimal places) and keep all user-facing text in English."
+          "description": "Add lightweight UI-side guards where appropriate (e.g., disable/hide save actions when creation is not permitted) and ensure any surfaced errors are clear English and role-accurate (Educator/Parent vs Student), especially around AI draft generation and saving."
         }
       ]
     }
