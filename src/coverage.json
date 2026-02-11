@@ -1,0 +1,69 @@
+{
+  "kind": "coverage_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-11T18:20:58.585Z",
+  "sources": {
+    "buildRequest": true,
+    "implementationPlan": true
+  },
+  "requirements": {
+    "total": 4,
+    "implemented": 2,
+    "items": [
+      {
+        "id": "REQ-13",
+        "summary": "Update all user-facing premium pricing copy to state that Premium Report Cards cost $5 billed every 9 weeks (replace any existing “every 3 months” / “/ 3 months” messaging wherever it appears).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/PremiumBanner.tsx",
+          "frontend/src/components/ReportCardsTab.tsx",
+          "frontend/src/components/OnboardingGuide.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/PremiumBanner.tsx",
+          "frontend/src/components/ReportCardsTab.tsx",
+          "frontend/src/components/OnboardingGuide.tsx"
+        ]
+      },
+      {
+        "id": "REQ-14",
+        "summary": "Update the checkout line-item metadata sent to the backend so that the product description reflects a 9-week access period at $5 (e.g., replace “3 months access to report card features” with “9 weeks access to report card features”).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/ReportCardsTab.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/ReportCardsTab.tsx"
+        ]
+      },
+      {
+        "id": "REQ-15",
+        "summary": "Update the backend premium access duration so that newly granted/purchased premium access lasts 9 weeks (instead of the current ~3-month duration), while keeping the price at 500 cents.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-16",
+        "summary": "Update any backend-provided premium price strings shown in preview/onboarding data (e.g., App Store preview / onboarding guide premium sections) so they describe $5 every 9 weeks in clear English.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      }
+    ]
+  },
+  "changedFiles": [
+    "backend/main.mo",
+    "build-request.json",
+    "feature_evidence.json",
+    "frontend-file-summaries.txt",
+    "frontend-implementation-plan.json",
+    "frontend/src/components/OnboardingGuide.tsx",
+    "frontend/src/components/PremiumBanner.tsx",
+    "frontend/src/components/ReportCardsTab.tsx",
+    "project_state.json",
+    "scratch/component-selection.json",
+    "spec.md",
+    "spec_vs_diff_report.json"
+  ]
+}

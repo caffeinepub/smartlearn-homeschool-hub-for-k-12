@@ -1,0 +1,171 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 11,
+  "summary": "App requiring separate sign-in flows for educators/parents vs students",
+  "architectural_notes": [
+    "Deployment/publishing workflow: user requested to publish the app after applying the latest update (toggle backend maintenance mode from unpublished to published after build).",
+    "Backend currently starts in unpublished mode; when unpublished, frontend shows dedicated Takedown screen.",
+    "Project renamed; update branding/UI copy to reflect new name “Homeschool Hub K-12” across web and app."
+  ],
+  "known_issues": [],
+  "isFixRequest": false,
+  "existing_features": [
+    {
+      "id": "feature-add-a-role-specific-sign-in-choice-that-lets-users-start-authentication-explicitly-as-either-a-educator-parent-or-b-student-and-persist-that-pre-login-choice-through-the-internet-identity-login-flow-so-it-can-be-used-during-first-time-profile-setup",
+      "title": "Add a role-specific sign-in choice that lets users start authentication explicitly as either (a) Educator/Parent or (b) Student, and persist that pre-login choice through the Internet Identity login flow so it can be used during first-time profile setup.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-first-time-profile-setup-to-respect-the-chosen-sign-in-type-by-defaulting-the-role-accordingly-educator-parent-admin-role-student-user-role-and-preventing-accidental-cross-role-selection-during-that-onboarding-step-when-a-sign-in-type-was-explicitly-chosen",
+      "title": "Update first-time profile setup to respect the chosen sign-in type by defaulting the role accordingly (Educator/Parent => admin role, Student => user role) and preventing accidental cross-role selection during that onboarding step when a sign-in type was explicitly chosen.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-expose-the-separate-sign-in-entry-points-anywhere-the-app-offers-login-controls-to-unauthenticated-users-at-minimum-landing-page-and-the-global-header-while-continuing-to-use-the-existing-internet-identity-authentication-mechanism",
+      "title": "Expose the separate sign-in entry points anywhere the app offers login controls to unauthenticated users (at minimum: Landing Page and the global Header), while continuing to use the existing Internet Identity authentication mechanism.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-backend-controlled-published-unpublished-maintenance-mode-that-allows-taking-the-live-deployed-draft-down-by-blocking-normal-app-usage-when-unpublished",
+      "title": "Add a backend-controlled “published/unpublished” (maintenance) mode that allows taking the live deployed draft down by blocking normal app usage when unpublished.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-when-the-backend-reports-the-app-is-unpublished-the-frontend-must-show-a-dedicated-takedown-screen-instead-of-the-landing-page-profile-setup-or-dashboard-with-clear-english-copy-indicating-the-draft-is-currently-unavailable",
+      "title": "When the backend reports the app is unpublished, the frontend must show a dedicated takedown screen instead of the Landing Page, Profile Setup, or Dashboard, with clear English copy indicating the draft is currently unavailable.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-admin-only-ui-control-that-allows-publishing-and-unpublishing-the-application-from-the-frontend-including-the-ability-to-provide-an-unpublish-reason-in-english",
+      "title": "Add an admin-only UI control that allows publishing and unpublishing the application from the frontend, including the ability to provide an unpublish reason in English.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-all-user-facing-product-name-branding-in-the-frontend-from-smartlearn-to-homeschool-hub-k-12-including-the-global-header-brand-text-and-any-install-pwa-prompts",
+      "title": "Replace all user-facing product name branding in the frontend from “SmartLearn” to “Homeschool Hub K-12”, including the global header brand text and any install/PWA prompts.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-pwa-browser-metadata-to-match-the-new-product-name-homeschool-hub-k-12-including-document-title-and-apple-pwa-title",
+      "title": "Update PWA/browser metadata to match the new product name “Homeschool Hub K-12”, including document title and Apple PWA title.",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-pwa-manifest-metadata-name-short-name-description-to-reflect-the-new-product-name-homeschool-hub-k-12-and-ensure-it-is-consistent-with-the-browser-metadata",
+      "title": "Update the PWA manifest metadata (name/short_name/description) to reflect the new product name “Homeschool Hub K-12” and ensure it is consistent with the browser metadata.",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-updated-app-icon-assets-that-match-the-new-homeschool-hub-k-12-branding-and-reference-them-from-the-pwa-manifest-and-html-apple-touch-icon-links",
+      "title": "Add updated app icon assets that match the new “Homeschool Hub K-12” branding and reference them from the PWA manifest and HTML Apple touch icon links.",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-all-user-facing-premium-pricing-copy-to-state-that-premium-report-cards-cost-5-billed-every-9-weeks-replace-any-existing-every-3-months-3-months-messaging-wherever-it-appears",
+      "title": "Update all user-facing premium pricing copy to state that Premium Report Cards cost $5 billed every 9 weeks (replace any existing “every 3 months” / “/ 3 months” messaging wherever it appears).",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-checkout-line-item-metadata-sent-to-the-backend-so-that-the-product-description-reflects-a-9-week-access-period-at-5-e-g-replace-3-months-access-to-report-card-features-with-9-weeks-access-to-report-card-features",
+      "title": "Update the checkout line-item metadata sent to the backend so that the product description reflects a 9-week access period at $5 (e.g., replace “3 months access to report card features” with “9 weeks access to report card features”).",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Add separate sign-in for educators/parents distinct from student sign-in",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Take down / unpublish the live deployed draft environment",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Change the backend default publication status so that newly deployed/installed canisters start in the published state (while keeping the existing admin-only publish/unpublish methods intact).",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Add a conditional migration that, on upgrade, can set the existing canister state to published so the app becomes live after an update (without breaking upgrades where a developer explicitly wants to keep it unpublished).",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Update web + app UI text/branding to match the new project name “Homeschool Hub K-12”",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Update pricing to $5 billed every 9 weeks",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Update the backend premium access duration so that newly granted/purchased premium access lasts 9 weeks (instead of the current ~3-month duration), while keeping the price at 500 cents.",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Update any backend-provided premium price strings shown in preview/onboarding data (e.g., App Store preview / onboarding guide premium sections) so they describe $5 every 9 weeks in clear English.",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "status": "pending"
+    }
+  ],
+  "projectName": "Homeschool Hub K-12",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

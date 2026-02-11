@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --radius: 0.625rem;
+        --background: 0.98 0.01 240;
+        --foreground: 0.15 0.02 240;
+        --card: 1 0 0;
+        --card-foreground: 0.15 0.02 240;
+        --popover: 1 0 0;
+        --popover-foreground: 0.15 0.02 240;
+        --primary: 0.55 0.18 260;
+        --primary-foreground: 0.99 0 0;
+        --secondary: 0.92 0.02 240;
+        --secondary-foreground: 0.15 0.02 240;
+        --muted: 0.95 0.01 240;
+        --muted-foreground: 0.50 0.01 240;
+        --accent: 0.88 0.03 200;
+        --accent-foreground: 0.15 0.02 240;
+        --destructive: 0.58 0.22 25;
+        --destructive-foreground: 0.99 0 0;
+        --border: 0.90 0.01 240;
+        --input: 0.90 0.01 240;
+        --ring: 0.55 0.18 260;
+        --chart-1: 0.60 0.20 260;
+        --chart-2: 0.65 0.18 180;
+        --chart-3: 0.55 0.15 320;
+        --chart-4: 0.70 0.20 40;
+        --chart-5: 0.62 0.22 140;
+        --sidebar: 0.98 0.01 240;
+        --sidebar-foreground: 0.15 0.02 240;
+        --sidebar-primary: 0.55 0.18 260;
+        --sidebar-primary-foreground: 0.99 0 0;
+        --sidebar-accent: 0.92 0.02 240;
+        --sidebar-accent-foreground: 0.15 0.02 240;
+        --sidebar-border: 0.90 0.01 240;
+        --sidebar-ring: 0.55 0.18 260;
+    }
+
+    .dark {
+        --background: 0.12 0.02 240;
+        --foreground: 0.98 0.01 240;
+        --card: 0.16 0.02 240;
+        --card-foreground: 0.98 0.01 240;
+        --popover: 0.14 0.02 240;
+        --popover-foreground: 0.98 0.01 240;
+        --primary: 0.65 0.20 260;
+        --primary-foreground: 0.12 0.02 240;
+        --secondary: 0.22 0.02 240;
+        --secondary-foreground: 0.98 0.01 240;
+        --muted: 0.20 0.02 240;
+        --muted-foreground: 0.65 0.01 240;
+        --accent: 0.28 0.03 200;
+        --accent-foreground: 0.98 0.01 240;
+        --destructive: 0.62 0.24 25;
+        --destructive-foreground: 0.98 0.01 240;
+        --border: 0.25 0.02 240;
+        --input: 0.25 0.02 240;
+        --ring: 0.65 0.20 260;
+        --chart-1: 0.65 0.22 260;
+        --chart-2: 0.70 0.20 180;
+        --chart-3: 0.60 0.18 320;
+        --chart-4: 0.75 0.22 40;
+        --chart-5: 0.68 0.24 140;
+        --sidebar: 0.14 0.02 240;
+        --sidebar-foreground: 0.98 0.01 240;
+        --sidebar-primary: 0.65 0.20 260;
+        --sidebar-primary-foreground: 0.98 0.01 240;
+        --sidebar-accent: 0.22 0.02 240;
+        --sidebar-accent-foreground: 0.98 0.01 240;
+        --sidebar-border: 0.25 0.02 240;
+        --sidebar-ring: 0.65 0.20 260;
+    }
+
+    * {
+        @apply border-border;
+    }
+
+    html {
+        scroll-behavior: smooth;
+        overflow-x: hidden;
+        overflow-y: auto;
+        font-size: 15px;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        font-size: 0.9375rem;
+        line-height: 1.5;
+    }
+
+    @media (min-width: 640px) {
+        html {
+            font-size: 15.5px;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        html {
+            font-size: 16px;
+        }
+    }
+}
+
+@layer utilities {
+    .scrollable {
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .scrollable-x {
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .scrollable-both {
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
