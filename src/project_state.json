@@ -1,14 +1,16 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 17,
+  "projectStateVersion": 21,
   "summary": "App requiring separate sign-in flows for educators/parents vs students",
   "architectural_notes": [
     "Deployment/publishing workflow: user requested to publish the app after applying the latest update (toggle backend maintenance mode from unpublished to published after build).",
     "Backend currently starts in unpublished mode; when unpublished, frontend shows dedicated Takedown screen.",
     "Project renamed; update branding/UI copy to reflect new name “Homeschool Hub K-12” across web and app."
   ],
-  "known_issues": [],
-  "isFixRequest": false,
+  "known_issues": [
+    "Access control behavior in Version 26 needs fine-tuning (user reported it still doesn’t feel right)."
+  ],
+  "isFixRequest": true,
   "existing_features": [
     {
       "id": "feature-add-a-role-specific-sign-in-choice-that-lets-users-start-authentication-explicitly-as-either-a-educator-parent-or-b-student-and-persist-that-pre-login-choice-through-the-internet-identity-login-flow-so-it-can-be-used-during-first-time-profile-setup",
@@ -161,6 +163,30 @@
         "REQ-25"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-update-the-frontend-lesson-plans-ui-to-ensure-students-cannot-access-ai-lesson-plan-generation-controls-including-the-ai-create-tab-and-the-generate-draft-action-while-educator-parent-users-retain-access",
+      "title": "Update the frontend Lesson Plans UI to ensure students cannot access AI lesson plan generation controls (including the \"AI Create\" tab and the \"Generate Draft\" action), while Educator/Parent users retain access.",
+      "reqIds": [
+        "REQ-27"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-audit-and-fine-tune-frontend-role-gating-so-educator-parent-only-controls-never-appear-for-student-users-including-during-initial-loading-states-and-after-identity-profile-changes",
+      "title": "Audit and fine-tune frontend role-gating so Educator/Parent-only controls never appear for Student users, including during initial loading states and after identity/profile changes.",
+      "reqIds": [
+        "REQ-28"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-standardize-and-improve-user-facing-authorization-error-handling-for-access-controlled-actions-lesson-creation-library-add-ai-draft-generation-assignments-premium-actions-so-the-app-shows-clear-english-messages-instead-of-raw-trap-strings",
+      "title": "Standardize and improve user-facing authorization error handling for access-controlled actions (lesson creation, library add, AI draft generation, assignments, premium actions) so the app shows clear English messages instead of raw trap strings.",
+      "reqIds": [
+        "REQ-29"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -252,6 +278,34 @@
       "id": "AR-16",
       "summary": "Allow parents (Educator/Parent role) to create lesson plans, upload lesson plans, and generate AI lesson plans within the Lesson Plans section",
       "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-17",
+      "summary": "Restrict AI lesson plan generation so only Educator/Parent users can generate AI lesson plans (students cannot)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-18",
+      "summary": "Enforce that the backend AI lesson plan draft generation API can only be called by Educator/Parent users (admin role), and must reject students (non-admin users) with a clear English authorization error.",
+      "reqIds": [
+        "REQ-26"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-19",
+      "summary": "Fine-tune the updated access control behavior in production (Version 26) based on user feedback",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-22",
+      "summary": "Fine-tune backend authorization trap messages for access-controlled endpoints so they are consistent, role-accurate, and easy for the frontend to classify as authorization failures.",
+      "reqIds": [
+        "REQ-30"
+      ],
       "status": "pending"
     }
   ],

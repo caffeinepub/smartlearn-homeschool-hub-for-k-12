@@ -1,788 +1,465 @@
 import { useState } from 'react';
-import { useListAllLessonPlans, useGetSubjects, useCreateCustomLesson, useGetPreMadeLessons, useCreateLessonFromLibrary, useGenerateAiLessonPlanDraft } from '../hooks/useQueries';
-import { Button } from '@/components/ui/button';
+import { useListAllLessonPlans, useCreateCustomLesson, useGetSubjects, useGetPreMadeLessons, useCreateLessonFromLibrary, useGenerateAiLessonPlanDraft } from '../hooks/useQueries';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, BookOpen, Loader2, Library, Sparkles, Upload } from 'lucide-react';
-import type { Subject, PreMadeLesson, LessonPlanDraft } from '../backend';
-import { isSupportedFileType, deriveDefaultTitle, readFileAsText, getUnsupportedFileTypeError } from '../utils/lessonUpload';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Plus, BookOpen, Upload, Library, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import type { Subject, LessonPlanRequest } from '../backend';
+import { isSupportedFileType, deriveDefaultTitle, readFileAsText, getUnsupportedFileTypeError } from '../utils/lessonUpload';
 
 interface LessonPlansTabProps {
-  isTeacher: boolean;
+  isEducatorParent: boolean;
 }
 
-const GRADE_LEVELS = [
-  { value: '0', label: 'Pre-K' },
-  { value: '1', label: '1st Grade' },
-  { value: '2', label: '2nd Grade' },
-  { value: '3', label: '3rd Grade' },
-  { value: '4', label: '4th Grade' },
-  { value: '5', label: '5th Grade' },
-  { value: '6', label: '6th Grade' },
-  { value: '7', label: '7th Grade' },
-  { value: '8', label: '8th Grade' },
-  { value: '9', label: '9th Grade' },
-  { value: '10', label: '10th Grade' },
-  { value: '11', label: '11th Grade' },
-  { value: '12', label: '12th Grade' },
-];
-
-const SUBJECT_ICONS: Record<string, string> = {
-  'History': '/assets/generated/history-icon.dim_64x64.png',
-  'Math': '/assets/generated/math-icon.dim_64x64.png',
-  'Language Arts/Reading': '/assets/generated/language-arts-icon.dim_64x64.png',
-  'Science': '/assets/generated/science-icon.dim_64x64.png',
-  'Social Studies': '/assets/generated/social-studies-icon.dim_64x64.png',
-};
-
-export default function LessonPlansTab({ isTeacher }: LessonPlansTabProps) {
+export default function LessonPlansTab({ isEducatorParent }: LessonPlansTabProps) {
   const { data: lessonPlans, isLoading } = useListAllLessonPlans();
   const { data: subjects } = useGetSubjects();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedGrade, setSelectedGrade] = useState<string>('all');
+  const { data: preMadeLessons } = useGetPreMadeLessons();
+  const createCustomLesson = useCreateCustomLesson();
+  const createLessonFromLibrary = useCreateLessonFromLibrary();
+  const generateAiDraft = useGenerateAiLessonPlanDraft();
 
-  const filteredLessons = selectedGrade === 'all'
-    ? lessonPlans
-    : lessonPlans?.filter((lesson) => lesson.gradeLevel.toString() === selectedGrade);
+  const [open, setOpen] = useState(false);
+  const [activeCreationTab, setActiveCreationTab] = useState('custom');
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+  const [gradeLevel, setGradeLevel] = useState('1');
+  const [selectedLibraryLesson, setSelectedLibraryLesson] = useState<bigint | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+
+  // AI generation state
+  const [aiSubject, setAiSubject] = useState('');
+  const [aiGradeLevel, setAiGradeLevel] = useState('1');
+  const [aiTopic, setAiTopic] = useState('');
+  const [aiStandards, setAiStandards] = useState('');
+  const [aiConstraints, setAiConstraints] = useState('');
+  const [aiDraft, setAiDraft] = useState<{ title: string; content: string } | null>(null);
+
+  const handleCreateCustom = async () => {
+    if (!title.trim() || !content.trim() || !selectedSubject) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      await createCustomLesson.mutateAsync({
+        title,
+        subject: selectedSubject,
+        gradeLevel: BigInt(gradeLevel),
+        content,
+      });
+      setOpen(false);
+      resetForm();
+    } catch (error) {
+      // Error already handled by mutation
+    }
+  };
+
+  const handleAddFromLibrary = async () => {
+    if (!selectedLibraryLesson) {
+      toast.error('Please select a lesson from the library');
+      return;
+    }
+
+    try {
+      await createLessonFromLibrary.mutateAsync(selectedLibraryLesson);
+      setOpen(false);
+      resetForm();
+    } catch (error) {
+      // Error already handled by mutation
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!isSupportedFileType(file.name)) {
+      toast.error(getUnsupportedFileTypeError());
+      return;
+    }
+
+    try {
+      const fileContent = await readFileAsText(file);
+      setContent(fileContent);
+      setTitle(deriveDefaultTitle(file.name));
+      setUploadedFile(file);
+      setActiveCreationTab('custom');
+      toast.success('File uploaded successfully. Review and save your lesson.');
+    } catch (error: any) {
+      toast.error(`Failed to read file: ${error.message}`);
+    }
+  };
+
+  const handleGenerateAiDraft = async () => {
+    if (!aiSubject.trim() || !aiGradeLevel) {
+      toast.error('Please provide at least a subject and grade level');
+      return;
+    }
+
+    const request: LessonPlanRequest = {
+      subject: aiSubject,
+      gradeLevel: BigInt(aiGradeLevel),
+      topic: aiTopic.trim() || undefined,
+      standards: aiStandards.trim() || undefined,
+      constraints: aiConstraints.trim() || undefined,
+    };
+
+    try {
+      const draft = await generateAiDraft.mutateAsync(request);
+      setAiDraft(draft);
+    } catch (error) {
+      // Error already handled by mutation
+    }
+  };
+
+  const handleSaveAiDraft = async () => {
+    if (!aiDraft || !selectedSubject) {
+      toast.error('Please generate a draft and select a subject first');
+      return;
+    }
+
+    try {
+      await createCustomLesson.mutateAsync({
+        title: aiDraft.title,
+        subject: selectedSubject,
+        gradeLevel: BigInt(aiGradeLevel),
+        content: aiDraft.content,
+      });
+      setOpen(false);
+      resetForm();
+      setAiDraft(null);
+    } catch (error) {
+      // Error already handled by mutation
+    }
+  };
+
+  const resetForm = () => {
+    setTitle('');
+    setContent('');
+    setSelectedSubject(null);
+    setGradeLevel('1');
+    setSelectedLibraryLesson(null);
+    setUploadedFile(null);
+    setAiSubject('');
+    setAiGradeLevel('1');
+    setAiTopic('');
+    setAiStandards('');
+    setAiConstraints('');
+    setAiDraft(null);
+    setActiveCreationTab('custom');
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6 sm:space-y-7 md:space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-4">
-          <Select value={selectedGrade} onValueChange={setSelectedGrade}>
-            <SelectTrigger className="w-[160px] sm:w-[180px]">
-              <SelectValue placeholder="Filter by grade" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Grades</SelectItem>
-              {GRADE_LEVELS.map((grade) => (
-                <SelectItem key={grade.value} value={grade.value}>
-                  {grade.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <div className="space-y-8">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-xl font-bold sm:text-2xl">Lesson Plans</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {isEducatorParent ? 'Create and manage lesson plans for your students' : 'View your assigned lesson plans'}
+          </p>
         </div>
-
-        {isTeacher && (
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        {isEducatorParent && (
+          <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="w-full sm:w-auto">
+              <Button className="self-start sm:self-auto">
                 <Plus className="mr-2 h-4 w-4" />
                 Create Lesson Plan
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-              <CreateLessonForm subjects={subjects || []} onSuccess={() => setIsDialogOpen(false)} />
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
+              <DialogHeader className="space-y-3">
+                <DialogTitle>Create New Lesson Plan</DialogTitle>
+                <DialogDescription>Choose how you'd like to create your lesson plan</DialogDescription>
+              </DialogHeader>
+
+              <Tabs value={activeCreationTab} onValueChange={setActiveCreationTab} className="mt-5">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="custom" className="flex items-center gap-1.5 text-xs">
+                    <BookOpen className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Custom</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="ai" className="flex items-center gap-1.5 text-xs">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">AI Create</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="upload" className="flex items-center gap-1.5 text-xs">
+                    <Upload className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Upload</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="library" className="flex items-center gap-1.5 text-xs">
+                    <Library className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Library</span>
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="custom" className="space-y-5 mt-6">
+                  <div className="space-y-2.5">
+                    <Label htmlFor="title">Lesson Title</Label>
+                    <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Enter lesson title" />
+                  </div>
+
+                  <div className="space-y-2.5">
+                    <Label htmlFor="subject">Subject</Label>
+                    <Select value={selectedSubject?.subjectId.toString()} onValueChange={(value) => {
+                      const subject = subjects?.find((s) => s.subjectId.toString() === value);
+                      setSelectedSubject(subject || null);
+                    }}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a subject" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subjects?.map((subject) => (
+                          <SelectItem key={subject.subjectId.toString()} value={subject.subjectId.toString()}>
+                            {subject.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    <Label htmlFor="grade">Grade Level</Label>
+                    <Select value={gradeLevel} onValueChange={setGradeLevel}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">Pre-K</SelectItem>
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map((grade) => (
+                          <SelectItem key={grade} value={grade.toString()}>
+                            Grade {grade}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    <Label htmlFor="content">Lesson Content</Label>
+                    <Textarea id="content" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Enter lesson content, objectives, and activities" rows={8} />
+                  </div>
+
+                  <DialogFooter>
+                    <Button onClick={handleCreateCustom} disabled={createCustomLesson.isPending}>
+                      {createCustomLesson.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Creating...
+                        </>
+                      ) : (
+                        'Create Lesson'
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </TabsContent>
+
+                <TabsContent value="ai" className="space-y-5 mt-6">
+                  {!aiDraft ? (
+                    <>
+                      <div className="space-y-2.5">
+                        <Label htmlFor="ai-subject">Subject *</Label>
+                        <Input id="ai-subject" value={aiSubject} onChange={(e) => setAiSubject(e.target.value)} placeholder="e.g., Math, Science, History" />
+                      </div>
+
+                      <div className="space-y-2.5">
+                        <Label htmlFor="ai-grade">Grade Level *</Label>
+                        <Select value={aiGradeLevel} onValueChange={setAiGradeLevel}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">Pre-K</SelectItem>
+                            {Array.from({ length: 12 }, (_, i) => i + 1).map((grade) => (
+                              <SelectItem key={grade} value={grade.toString()}>
+                                Grade {grade}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2.5">
+                        <Label htmlFor="ai-topic">Topic (Optional)</Label>
+                        <Input id="ai-topic" value={aiTopic} onChange={(e) => setAiTopic(e.target.value)} placeholder="e.g., Fractions, Photosynthesis" />
+                      </div>
+
+                      <div className="space-y-2.5">
+                        <Label htmlFor="ai-standards">Standards (Optional)</Label>
+                        <Input id="ai-standards" value={aiStandards} onChange={(e) => setAiStandards(e.target.value)} placeholder="e.g., Common Core, State Standards" />
+                      </div>
+
+                      <div className="space-y-2.5">
+                        <Label htmlFor="ai-constraints">Special Requirements (Optional)</Label>
+                        <Textarea id="ai-constraints" value={aiConstraints} onChange={(e) => setAiConstraints(e.target.value)} placeholder="Any special constraints or requirements" rows={3} />
+                      </div>
+
+                      <DialogFooter>
+                        <Button onClick={handleGenerateAiDraft} disabled={generateAiDraft.isPending}>
+                          {generateAiDraft.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Generating...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="mr-2 h-4 w-4" />
+                              Generate Draft
+                            </>
+                          )}
+                        </Button>
+                      </DialogFooter>
+                    </>
+                  ) : (
+                    <>
+                      <div className="space-y-2.5">
+                        <Label htmlFor="draft-title">Lesson Title</Label>
+                        <Input id="draft-title" value={aiDraft.title} onChange={(e) => setAiDraft({ ...aiDraft, title: e.target.value })} />
+                      </div>
+
+                      <div className="space-y-2.5">
+                        <Label htmlFor="draft-subject">Subject</Label>
+                        <Select value={selectedSubject?.subjectId.toString()} onValueChange={(value) => {
+                          const subject = subjects?.find((s) => s.subjectId.toString() === value);
+                          setSelectedSubject(subject || null);
+                        }}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a subject" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {subjects?.map((subject) => (
+                              <SelectItem key={subject.subjectId.toString()} value={subject.subjectId.toString()}>
+                                {subject.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2.5">
+                        <Label htmlFor="draft-content">Lesson Content</Label>
+                        <Textarea id="draft-content" value={aiDraft.content} onChange={(e) => setAiDraft({ ...aiDraft, content: e.target.value })} rows={10} />
+                      </div>
+
+                      <DialogFooter className="gap-2.5">
+                        <Button variant="outline" onClick={() => setAiDraft(null)}>
+                          Generate New
+                        </Button>
+                        <Button onClick={handleSaveAiDraft} disabled={createCustomLesson.isPending}>
+                          {createCustomLesson.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            'Save Lesson'
+                          )}
+                        </Button>
+                      </DialogFooter>
+                    </>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="upload" className="space-y-5 mt-6">
+                  <div className="space-y-2.5">
+                    <Label htmlFor="file-upload">Upload Lesson File</Label>
+                    <Input id="file-upload" type="file" accept=".txt,.md" onChange={handleFileUpload} />
+                    <p className="text-xs text-muted-foreground">Supported formats: .txt, .md</p>
+                  </div>
+                  {uploadedFile && (
+                    <div className="rounded-lg border bg-muted/50 p-4">
+                      <p className="text-sm font-medium">File uploaded: {uploadedFile.name}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Switch to the Custom tab to review and save your lesson.</p>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="library" className="space-y-5 mt-6">
+                  <div className="space-y-2.5">
+                    <Label>Select from Library</Label>
+                    <div className="max-h-[400px] space-y-3 overflow-y-auto rounded-lg border p-4">
+                      {preMadeLessons && preMadeLessons.length > 0 ? (
+                        preMadeLessons.map((lesson) => (
+                          <Card key={lesson.lessonId.toString()} className={`cursor-pointer transition-colors hover:border-primary ${selectedLibraryLesson === lesson.lessonId ? 'border-primary bg-primary/5' : ''}`} onClick={() => setSelectedLibraryLesson(lesson.lessonId)}>
+                            <CardHeader className="p-4">
+                              <CardTitle className="text-base">{lesson.title}</CardTitle>
+                              <CardDescription className="flex items-center gap-2.5 text-xs">
+                                <Badge variant="outline">{lesson.subject.name}</Badge>
+                                <span>Grade {lesson.gradeLevel.toString()}</span>
+                              </CardDescription>
+                            </CardHeader>
+                          </Card>
+                        ))
+                      ) : (
+                        <p className="text-center text-sm text-muted-foreground">No pre-made lessons available</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <DialogFooter>
+                    <Button onClick={handleAddFromLibrary} disabled={createLessonFromLibrary.isPending || !selectedLibraryLesson}>
+                      {createLessonFromLibrary.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Adding...
+                        </>
+                      ) : (
+                        'Add from Library'
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </TabsContent>
+              </Tabs>
             </DialogContent>
           </Dialog>
         )}
       </div>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : filteredLessons && filteredLessons.length > 0 ? (
-        <div className="grid gap-5 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredLessons.map((lesson) => (
-            <LessonCard key={lesson.lessonId.toString()} lesson={lesson} isTeacher={isTeacher} />
+      {lessonPlans && lessonPlans.length > 0 ? (
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {lessonPlans.map((lesson) => (
+            <Card key={lesson.lessonId.toString()} className="flex flex-col">
+              <CardHeader className="space-y-3">
+                <CardTitle className="text-base">{lesson.title}</CardTitle>
+                <CardDescription className="flex flex-wrap items-center gap-2.5 text-xs">
+                  <Badge variant="outline">{lesson.subject.name}</Badge>
+                  <span>Grade {lesson.gradeLevel.toString()}</span>
+                  {lesson.fromLibrary && <Badge variant="secondary">Library</Badge>}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex-1">
+                <p className="line-clamp-3 text-sm text-muted-foreground">{lesson.content}</p>
+              </CardContent>
+            </Card>
           ))}
         </div>
       ) : (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <BookOpen className="mb-4 h-12 w-12 text-muted-foreground" />
-            <p className="text-muted-foreground">
-              {selectedGrade === 'all' ? 'No lesson plans yet' : 'No lesson plans for this grade level'}
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+            <BookOpen className="mb-5 h-12 w-12 text-muted-foreground" />
+            <h3 className="mb-2.5 text-lg font-semibold">No Lesson Plans Yet</h3>
+            <p className="mb-6 text-sm text-muted-foreground">
+              {isEducatorParent ? 'Create your first lesson plan to get started' : 'Your educator will assign lesson plans soon'}
             </p>
           </CardContent>
         </Card>
       )}
-    </div>
-  );
-}
-
-function LessonCard({ lesson, isTeacher }: { lesson: any; isTeacher: boolean }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const gradeLabel = GRADE_LEVELS.find((g) => g.value === lesson.gradeLevel.toString())?.label || 'Unknown';
-  const subjectIcon = SUBJECT_ICONS[lesson.subject.name];
-
-  return (
-    <Card className="transition-all hover:shadow-md">
-      <CardHeader className="space-y-4 pb-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3 flex-1 min-w-0">
-            {subjectIcon && (
-              <img src={subjectIcon} alt={lesson.subject.name} className="h-10 w-10 flex-shrink-0 rounded-md object-contain" />
-            )}
-            <div className="flex-1 min-w-0">
-              <CardTitle className="text-base sm:text-lg">{lesson.title}</CardTitle>
-              <CardDescription className="mt-2">{lesson.subject.name}</CardDescription>
-            </div>
-          </div>
-          <div className="flex flex-col gap-2 flex-shrink-0">
-            <Badge variant="secondary" className="text-xs">{gradeLabel}</Badge>
-            {lesson.fromLibrary && (
-              <Badge variant="outline" className="text-xs">
-                <Library className="mr-1 h-3 w-3" />
-                Library
-              </Badge>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="space-y-4">
-          <div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {isExpanded ? lesson.content : `${lesson.content.slice(0, 100)}${lesson.content.length > 100 ? '...' : ''}`}
-            </p>
-            {lesson.content.length > 100 && (
-              <Button variant="link" size="sm" className="mt-3 h-auto p-0 text-xs" onClick={() => setIsExpanded(!isExpanded)}>
-                {isExpanded ? 'Show less' : 'Show more'}
-              </Button>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function CreateLessonForm({ subjects, onSuccess }: { subjects: Subject[]; onSuccess: () => void }) {
-  const [activeTab, setActiveTab] = useState<'custom' | 'library' | 'ai' | 'upload'>('custom');
-
-  return (
-    <>
-      <DialogHeader className="space-y-3">
-        <DialogTitle>Create New Lesson Plan</DialogTitle>
-        <DialogDescription>Create a custom lesson, use AI to generate one, upload a file, or choose from the pre-made library</DialogDescription>
-      </DialogHeader>
-      
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'custom' | 'library' | 'ai' | 'upload')} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="custom">Custom</TabsTrigger>
-          <TabsTrigger value="ai">AI Create</TabsTrigger>
-          <TabsTrigger value="upload">Upload</TabsTrigger>
-          <TabsTrigger value="library">Library</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="custom" className="mt-6">
-          <CustomLessonForm subjects={subjects} onSuccess={onSuccess} />
-        </TabsContent>
-        
-        <TabsContent value="ai" className="mt-6">
-          <AiLessonForm subjects={subjects} onSuccess={onSuccess} />
-        </TabsContent>
-        
-        <TabsContent value="upload" className="mt-6">
-          <UploadLessonForm subjects={subjects} onSuccess={onSuccess} />
-        </TabsContent>
-        
-        <TabsContent value="library" className="mt-6">
-          <LibraryLessonForm subjects={subjects} onSuccess={onSuccess} />
-        </TabsContent>
-      </Tabs>
-    </>
-  );
-}
-
-function CustomLessonForm({ subjects, onSuccess }: { subjects: Subject[]; onSuccess: () => void }) {
-  const [title, setTitle] = useState('');
-  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
-  const [gradeLevel, setGradeLevel] = useState('');
-  const [content, setContent] = useState('');
-  const { mutate: createLesson, isPending } = useCreateCustomLesson();
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (title && selectedSubject && gradeLevel && content) {
-      createLesson(
-        {
-          title,
-          subject: selectedSubject,
-          gradeLevel: BigInt(gradeLevel),
-          content,
-        },
-        {
-          onSuccess: () => {
-            setTitle('');
-            setSelectedSubject(null);
-            setGradeLevel('');
-            setContent('');
-            onSuccess();
-          },
-        }
-      );
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
-      <div className="space-y-2.5">
-        <Label htmlFor="title">Lesson Title</Label>
-        <Input id="title" placeholder="e.g., Introduction to Algebra" value={title} onChange={(e) => setTitle(e.target.value)} required />
-      </div>
-
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div className="space-y-2.5">
-          <Label htmlFor="subject">Subject</Label>
-          <Select value={selectedSubject?.subjectId.toString() || ''} onValueChange={(value) => {
-            const subject = subjects.find((s) => s.subjectId.toString() === value);
-            setSelectedSubject(subject || null);
-          }}>
-            <SelectTrigger id="subject">
-              <SelectValue placeholder="Select subject" />
-            </SelectTrigger>
-            <SelectContent>
-              {subjects.map((subject) => (
-                <SelectItem key={subject.subjectId.toString()} value={subject.subjectId.toString()}>
-                  {subject.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2.5">
-          <Label htmlFor="grade">Grade Level</Label>
-          <Select value={gradeLevel} onValueChange={setGradeLevel}>
-            <SelectTrigger id="grade">
-              <SelectValue placeholder="Select grade" />
-            </SelectTrigger>
-            <SelectContent>
-              {GRADE_LEVELS.map((grade) => (
-                <SelectItem key={grade.value} value={grade.value}>
-                  {grade.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="space-y-2.5">
-        <Label htmlFor="content">Lesson Content</Label>
-        <Textarea
-          id="content"
-          placeholder="Describe the lesson objectives, materials needed, and activities..."
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          rows={6}
-          required
-        />
-      </div>
-
-      <div className="flex justify-end gap-3 pt-3">
-        <Button type="button" variant="outline" onClick={onSuccess}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isPending}>
-          {isPending ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Creating...
-            </>
-          ) : (
-            'Create Lesson'
-          )}
-        </Button>
-      </div>
-    </form>
-  );
-}
-
-function AiLessonForm({ subjects, onSuccess }: { subjects: Subject[]; onSuccess: () => void }) {
-  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
-  const [gradeLevel, setGradeLevel] = useState('');
-  const [topic, setTopic] = useState('');
-  const [generatedDraft, setGeneratedDraft] = useState<LessonPlanDraft | null>(null);
-  const [editedTitle, setEditedTitle] = useState('');
-  const [editedContent, setEditedContent] = useState('');
-  
-  const { mutate: generateDraft, isPending: isGenerating } = useGenerateAiLessonPlanDraft();
-  const { mutate: createLesson, isPending: isSaving } = useCreateCustomLesson();
-
-  const handleGenerate = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (selectedSubject && gradeLevel) {
-      generateDraft(
-        {
-          subject: selectedSubject.name,
-          gradeLevel: BigInt(gradeLevel),
-          topic: topic || undefined,
-          standards: undefined,
-          constraints: undefined,
-        },
-        {
-          onSuccess: (draft) => {
-            setGeneratedDraft(draft);
-            setEditedTitle(draft.title);
-            setEditedContent(draft.content);
-          },
-        }
-      );
-    }
-  };
-
-  const handleSave = () => {
-    if (selectedSubject && gradeLevel && editedTitle && editedContent) {
-      createLesson(
-        {
-          title: editedTitle,
-          subject: selectedSubject,
-          gradeLevel: BigInt(gradeLevel),
-          content: editedContent,
-        },
-        {
-          onSuccess: () => {
-            setSelectedSubject(null);
-            setGradeLevel('');
-            setTopic('');
-            setGeneratedDraft(null);
-            setEditedTitle('');
-            setEditedContent('');
-            onSuccess();
-          },
-        }
-      );
-    }
-  };
-
-  return (
-    <div className="space-y-5 sm:space-y-6">
-      {!generatedDraft ? (
-        <form onSubmit={handleGenerate} className="space-y-5 sm:space-y-6">
-          <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
-            <Sparkles className="h-5 w-5 flex-shrink-0 text-primary" />
-            <p className="text-sm text-muted-foreground">
-              Our AI will generate a lesson plan draft based on your inputs. You can edit it before saving.
-            </p>
-          </div>
-
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div className="space-y-2.5">
-              <Label htmlFor="ai-subject">Subject</Label>
-              <Select value={selectedSubject?.subjectId.toString() || ''} onValueChange={(value) => {
-                const subject = subjects.find((s) => s.subjectId.toString() === value);
-                setSelectedSubject(subject || null);
-              }}>
-                <SelectTrigger id="ai-subject">
-                  <SelectValue placeholder="Select subject" />
-                </SelectTrigger>
-                <SelectContent>
-                  {subjects.map((subject) => (
-                    <SelectItem key={subject.subjectId.toString()} value={subject.subjectId.toString()}>
-                      {subject.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2.5">
-              <Label htmlFor="ai-grade">Grade Level</Label>
-              <Select value={gradeLevel} onValueChange={setGradeLevel}>
-                <SelectTrigger id="ai-grade">
-                  <SelectValue placeholder="Select grade" />
-                </SelectTrigger>
-                <SelectContent>
-                  {GRADE_LEVELS.map((grade) => (
-                    <SelectItem key={grade.value} value={grade.value}>
-                      {grade.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2.5">
-            <Label htmlFor="ai-topic">Topic (Optional)</Label>
-            <Input
-              id="ai-topic"
-              placeholder="e.g., Photosynthesis, World War II, Fractions"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-            />
-          </div>
-
-          <div className="flex justify-end gap-3 pt-3">
-            <Button type="button" variant="outline" onClick={onSuccess}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isGenerating || !selectedSubject || !gradeLevel}>
-              {isGenerating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Generate Draft
-                </>
-              )}
-            </Button>
-          </div>
-        </form>
-      ) : (
-        <div className="space-y-5 sm:space-y-6">
-          <div className="flex items-start gap-3 rounded-lg border border-green-500/20 bg-green-500/5 p-4">
-            <Sparkles className="h-5 w-5 flex-shrink-0 text-green-600" />
-            <p className="text-sm text-muted-foreground">
-              Draft generated! Review and edit the content below before saving.
-            </p>
-          </div>
-
-          <div className="space-y-2.5">
-            <Label htmlFor="edit-title">Lesson Title</Label>
-            <Input
-              id="edit-title"
-              value={editedTitle}
-              onChange={(e) => setEditedTitle(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="space-y-2.5">
-            <Label htmlFor="edit-content">Lesson Content</Label>
-            <Textarea
-              id="edit-content"
-              value={editedContent}
-              onChange={(e) => setEditedContent(e.target.value)}
-              rows={12}
-              required
-            />
-          </div>
-
-          <div className="flex justify-end gap-3 pt-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setGeneratedDraft(null);
-                setEditedTitle('');
-                setEditedContent('');
-              }}
-            >
-              Start Over
-            </Button>
-            <Button onClick={handleSave} disabled={isSaving || !editedTitle || !editedContent}>
-              {isSaving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save Lesson'
-              )}
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function UploadLessonForm({ subjects, onSuccess }: { subjects: Subject[]; onSuccess: () => void }) {
-  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
-  const [gradeLevel, setGradeLevel] = useState('');
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  
-  const { mutate: createLesson, isPending } = useCreateCustomLesson();
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!isSupportedFileType(file.name)) {
-      toast.error(getUnsupportedFileTypeError());
-      e.target.value = '';
-      return;
-    }
-
-    setIsProcessing(true);
-    setSelectedFile(file);
-
-    try {
-      const fileContent = await readFileAsText(file);
-      setContent(fileContent);
-      
-      // Derive default title from filename
-      const defaultTitle = deriveDefaultTitle(file.name);
-      setTitle(defaultTitle);
-      
-      toast.success('File uploaded successfully');
-    } catch (error) {
-      toast.error('Failed to read file content');
-      setSelectedFile(null);
-      e.target.value = '';
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (title && selectedSubject && gradeLevel && content) {
-      createLesson(
-        {
-          title,
-          subject: selectedSubject,
-          gradeLevel: BigInt(gradeLevel),
-          content,
-        },
-        {
-          onSuccess: () => {
-            setTitle('');
-            setSelectedSubject(null);
-            setGradeLevel('');
-            setContent('');
-            setSelectedFile(null);
-            onSuccess();
-          },
-        }
-      );
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
-      <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
-        <Upload className="h-5 w-5 flex-shrink-0 text-primary" />
-        <p className="text-sm text-muted-foreground">
-          Upload a text-based lesson plan file (.txt or .md). The content will be extracted and you can edit it before saving.
-        </p>
-      </div>
-
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div className="space-y-2.5">
-          <Label htmlFor="upload-subject">Subject</Label>
-          <Select value={selectedSubject?.subjectId.toString() || ''} onValueChange={(value) => {
-            const subject = subjects.find((s) => s.subjectId.toString() === value);
-            setSelectedSubject(subject || null);
-          }} required>
-            <SelectTrigger id="upload-subject">
-              <SelectValue placeholder="Select subject" />
-            </SelectTrigger>
-            <SelectContent>
-              {subjects.map((subject) => (
-                <SelectItem key={subject.subjectId.toString()} value={subject.subjectId.toString()}>
-                  {subject.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2.5">
-          <Label htmlFor="upload-grade">Grade Level</Label>
-          <Select value={gradeLevel} onValueChange={setGradeLevel} required>
-            <SelectTrigger id="upload-grade">
-              <SelectValue placeholder="Select grade" />
-            </SelectTrigger>
-            <SelectContent>
-              {GRADE_LEVELS.map((grade) => (
-                <SelectItem key={grade.value} value={grade.value}>
-                  {grade.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="space-y-2.5">
-        <Label htmlFor="file-upload">Upload File (.txt or .md)</Label>
-        <Input
-          id="file-upload"
-          type="file"
-          accept=".txt,.md"
-          onChange={handleFileChange}
-          disabled={isProcessing}
-          required={!content}
-        />
-        {selectedFile && (
-          <p className="text-xs text-muted-foreground">
-            Selected: {selectedFile.name}
-          </p>
-        )}
-      </div>
-
-      {content && (
-        <>
-          <div className="space-y-2.5">
-            <Label htmlFor="upload-title">Lesson Title</Label>
-            <Input
-              id="upload-title"
-              placeholder="e.g., Introduction to Algebra"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="space-y-2.5">
-            <Label htmlFor="upload-content">Lesson Content (Editable)</Label>
-            <Textarea
-              id="upload-content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={8}
-              required
-            />
-          </div>
-        </>
-      )}
-
-      <div className="flex justify-end gap-3 pt-3">
-        <Button type="button" variant="outline" onClick={onSuccess}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isPending || isProcessing || !content}>
-          {isPending ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            'Save Lesson'
-          )}
-        </Button>
-      </div>
-    </form>
-  );
-}
-
-function LibraryLessonForm({ subjects, onSuccess }: { subjects: Subject[]; onSuccess: () => void }) {
-  const { data: preMadeLessons, isLoading } = useGetPreMadeLessons();
-  const { mutate: createFromLibrary, isPending } = useCreateLessonFromLibrary();
-  const [selectedLesson, setSelectedLesson] = useState<PreMadeLesson | null>(null);
-  const [filterSubject, setFilterSubject] = useState<string>('all');
-  const [filterGrade, setFilterGrade] = useState<string>('all');
-
-  const filteredLibraryLessons = preMadeLessons?.filter((lesson) => {
-    const subjectMatch = filterSubject === 'all' || lesson.subject.subjectId.toString() === filterSubject;
-    const gradeMatch = filterGrade === 'all' || lesson.gradeLevel.toString() === filterGrade;
-    return subjectMatch && gradeMatch;
-  });
-
-  const handleAddLesson = () => {
-    if (selectedLesson) {
-      createFromLibrary(selectedLesson.lessonId, {
-        onSuccess: () => {
-          setSelectedLesson(null);
-          onSuccess();
-        },
-      });
-    }
-  };
-
-  return (
-    <div className="space-y-5 sm:space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2.5">
-          <Label htmlFor="filter-subject">Filter by Subject</Label>
-          <Select value={filterSubject} onValueChange={setFilterSubject}>
-            <SelectTrigger id="filter-subject">
-              <SelectValue placeholder="All subjects" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Subjects</SelectItem>
-              {subjects.map((subject) => (
-                <SelectItem key={subject.subjectId.toString()} value={subject.subjectId.toString()}>
-                  {subject.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2.5">
-          <Label htmlFor="filter-grade">Filter by Grade</Label>
-          <Select value={filterGrade} onValueChange={setFilterGrade}>
-            <SelectTrigger id="filter-grade">
-              <SelectValue placeholder="All grades" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Grades</SelectItem>
-              {GRADE_LEVELS.map((grade) => (
-                <SelectItem key={grade.value} value={grade.value}>
-                  {grade.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : filteredLibraryLessons && filteredLibraryLessons.length > 0 ? (
-        <div className="max-h-[400px] space-y-3 overflow-y-auto rounded-lg border p-4">
-          {filteredLibraryLessons.map((lesson) => {
-            const gradeLabel = GRADE_LEVELS.find((g) => g.value === lesson.gradeLevel.toString())?.label || 'Unknown';
-            const isSelected = selectedLesson?.lessonId === lesson.lessonId;
-
-            return (
-              <Card
-                key={lesson.lessonId.toString()}
-                className={`cursor-pointer transition-all ${isSelected ? 'border-primary bg-primary/5' : 'hover:border-primary/50'}`}
-                onClick={() => setSelectedLesson(lesson)}
-              >
-                <CardHeader className="p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-sm">{lesson.title}</CardTitle>
-                      <CardDescription className="mt-1.5 text-xs">
-                        {lesson.subject.name} • {gradeLabel}
-                      </CardDescription>
-                    </div>
-                    {isSelected && (
-                      <Badge variant="default" className="text-xs">Selected</Badge>
-                    )}
-                  </div>
-                </CardHeader>
-              </Card>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12">
-          <Library className="mb-3 h-10 w-10 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">No library lessons match your filters</p>
-        </div>
-      )}
-
-      <div className="flex justify-end gap-3 pt-3">
-        <Button type="button" variant="outline" onClick={onSuccess}>
-          Cancel
-        </Button>
-        <Button onClick={handleAddLesson} disabled={!selectedLesson || isPending}>
-          {isPending ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Adding...
-            </>
-          ) : (
-            'Add to My Lessons'
-          )}
-        </Button>
-      </div>
     </div>
   );
 }

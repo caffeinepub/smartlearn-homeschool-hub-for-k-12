@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, TrendingUp, Award, Target } from 'lucide-react';
 
 interface ProgressTabProps {
-  isTeacher: boolean;
+  isEducatorParent: boolean;
 }
 
 const SUBJECT_ICONS: Record<string, string> = {
@@ -18,7 +18,7 @@ const SUBJECT_ICONS: Record<string, string> = {
   'Social Studies': '/assets/generated/social-studies-icon.dim_64x64.png',
 };
 
-export default function ProgressTab({ isTeacher }: ProgressTabProps) {
+export default function ProgressTab({ isEducatorParent }: ProgressTabProps) {
   const { identity } = useInternetIdentity();
   const studentId = identity?.getPrincipal() || null;
   const { data: assignments, isLoading: assignmentsLoading } = useGetStudentAssignments(studentId);

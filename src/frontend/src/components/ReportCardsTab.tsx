@@ -13,7 +13,7 @@ import StripeSetup from './StripeSetup';
 import { createPremiumCheckoutItems, PREMIUM_PRICE_DISPLAY, PREMIUM_DURATION_DISPLAY } from '../constants/premiumPricing';
 
 interface ReportCardsTabProps {
-  isTeacher: boolean;
+  isEducatorParent: boolean;
 }
 
 const SUBJECT_ICONS: Record<string, string> = {
@@ -24,7 +24,7 @@ const SUBJECT_ICONS: Record<string, string> = {
   'Social Studies': '/assets/generated/social-studies-icon.dim_64x64.png',
 };
 
-export default function ReportCardsTab({ isTeacher }: ReportCardsTabProps) {
+export default function ReportCardsTab({ isEducatorParent }: ReportCardsTabProps) {
   const { identity } = useInternetIdentity();
   const studentId = identity?.getPrincipal() || null;
   const { data: hasPremium, isLoading: premiumLoading } = useGetPremiumAccessStatus(studentId);
@@ -39,7 +39,7 @@ export default function ReportCardsTab({ isTeacher }: ReportCardsTabProps) {
 
   const handleUpgrade = async () => {
     if (!isStripeConfigured) {
-      if (isTeacher) {
+      if (isEducatorParent) {
         setShowStripeSetup(true);
       } else {
         toast.error('Payment system is not configured. Please contact your administrator.');
@@ -165,7 +165,7 @@ export default function ReportCardsTab({ isTeacher }: ReportCardsTabProps) {
           </CardContent>
         </Card>
 
-        {isTeacher && (
+        {isEducatorParent && (
           <StripeSetup open={showStripeSetup} onOpenChange={setShowStripeSetup} />
         )}
       </div>

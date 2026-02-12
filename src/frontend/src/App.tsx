@@ -1,99 +1,52 @@
-import { useInternetIdentity } from './hooks/useInternetIdentity';
-import { useGetCallerUserProfile, useGetPublicationStatus } from './hooks/useQueries';
+import { RouterProvider, createRouter, createRoute, createRootRoute, Outlet } from '@tanstack/react-router';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/sonner';
-import { RouterProvider, createRouter, createRoute, createRootRoute } from '@tanstack/react-router';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useInternetIdentity } from './hooks/useInternetIdentity';
+import { useGetCallerUserProfile, useGetPublicationStatus } from './hooks/useQueries';
 import Header from './components/Header';
 import Footer from './components/Footer';
-import ProfileSetup from './components/ProfileSetup';
 import Dashboard from './pages/Dashboard';
+import LandingPage from './pages/LandingPage';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentCancel from './pages/PaymentCancel';
-import LandingPage from './pages/LandingPage';
 import Takedown from './pages/Takedown';
+import ProfileSetup from './components/ProfileSetup';
 import InstallPrompt from './components/InstallPrompt';
+import OfflineIndicator from './components/OfflineIndicator';
 import { Loader2 } from 'lucide-react';
 
-const queryClient = new QueryClient();
-
-const rootRoute = createRootRoute({
-  component: RootComponent,
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
 });
 
-function RootComponent() {
-  const { data: publicationStatus, isLoading: publicationLoading } = useGetPublicationStatus();
-
-  if (publicationLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
-          <p className="mt-4 text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const isPublished = publicationStatus?.__kind__ === 'published';
-  const unpublishReason = publicationStatus?.__kind__ === 'unpublished' 
-    ? publicationStatus.unpublished.reason 
-    : undefined;
-
-  if (!isPublished) {
-    return <Takedown reason={unpublishReason} />;
-  }
-
+function Layout() {
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden">
       <Header />
-      <main className="flex-1 overflow-x-hidden">
-        <AppContent />
+      <main className="flex-1">
+        <Outlet />
       </main>
       <Footer />
       <InstallPrompt />
+      <OfflineIndicator />
     </div>
   );
 }
 
-function AppContent() {
-  const { identity, loginStatus } = useInternetIdentity();
-  const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
-
-  const isAuthenticated = !!identity;
-  const showProfileSetup = isAuthenticated && !profileLoading && isFetched && userProfile === null;
-  const showDashboard = isAuthenticated && !profileLoading && isFetched && userProfile !== null;
-
-  if (loginStatus === 'initializing' || (isAuthenticated && profileLoading)) {
-    return (
-      <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
-          <p className="mt-4 text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <LandingPage />;
-  }
-
-  if (showProfileSetup) {
-    return <ProfileSetup />;
-  }
-
-  if (showDashboard && userProfile) {
-    return <Dashboard userProfile={userProfile} />;
-  }
-
-  return null;
-}
+const rootRoute = createRootRoute({
+  component: Layout,
+});
 
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  component: () => null,
+  component: IndexPage,
 });
 
 const paymentSuccessRoute = createRoute({
@@ -111,6 +64,64 @@ const paymentCancelRoute = createRoute({
 const routeTree = rootRoute.addChildren([indexRoute, paymentSuccessRoute, paymentCancelRoute]);
 
 const router = createRouter({ routeTree });
+
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router;
+  }
+}
+
+function IndexPage() {
+  const { identity, isInitializing } = useInternetIdentity();
+  const { data: publicationStatus, isLoading: publicationLoading } = useGetPublicationStatus();
+  const { data: userProfile, isLoading: profileLoading, isFetched: profileFetched } = useGetCallerUserProfile();
+
+  const isAuthenticated = !!identity;
+
+  // Show loading while checking publication status or initializing identity
+  if (publicationLoading || isInitializing) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Check if app is unpublished
+  if (publicationStatus?.__kind__ === 'unpublished') {
+    return <Takedown reason={publicationStatus.unpublished.reason} />;
+  }
+
+  // Not authenticated - show landing page
+  if (!isAuthenticated) {
+    return <LandingPage />;
+  }
+
+  // Authenticated - wait for profile to be fetched
+  if (profileLoading || !profileFetched) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Show profile setup if no profile exists
+  if (userProfile === null) {
+    return <ProfileSetup />;
+  }
+
+  // Show dashboard with user profile (type guard ensures userProfile is defined)
+  if (!userProfile) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return <Dashboard userProfile={userProfile} />;
+}
 
 export default function App() {
   return (

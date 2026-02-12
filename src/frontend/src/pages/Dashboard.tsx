@@ -58,44 +58,43 @@ export default function Dashboard({ userProfile }: DashboardProps) {
         <TabsList className="grid w-full grid-cols-4 gap-1.5">
           <TabsTrigger value="lessons" className="flex items-center gap-1.5 text-xs sm:gap-2 sm:text-sm">
             <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Lessons</span>
+            <span className="hidden sm:inline">Lesson Plans</span>
             <span className="sm:hidden">Lessons</span>
           </TabsTrigger>
           <TabsTrigger value="assignments" className="flex items-center gap-1.5 text-xs sm:gap-2 sm:text-sm">
-            <GraduationCap className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <span className="hidden sm:inline">Assignments</span>
-            <span className="sm:hidden">Work</span>
+            <span className="sm:hidden">Tasks</span>
           </TabsTrigger>
           <TabsTrigger value="progress" className="flex items-center gap-1.5 text-xs sm:gap-2 sm:text-sm">
             <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Progress</span>
-            <span className="sm:hidden">Progress</span>
+            <span>Progress</span>
           </TabsTrigger>
           <TabsTrigger value="reports" className="flex items-center gap-1.5 text-xs sm:gap-2 sm:text-sm">
-            <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <GraduationCap className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <span className="hidden sm:inline">Report Cards</span>
             <span className="sm:hidden">Reports</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="lessons" className="overflow-y-auto space-y-5 sm:space-y-6 md:space-y-7">
-          <LessonPlansTab isTeacher={isEducatorParent} />
+        <TabsContent value="lessons" className="mt-0">
+          <LessonPlansTab isEducatorParent={isEducatorParent} />
         </TabsContent>
 
-        <TabsContent value="assignments" className="overflow-y-auto space-y-5 sm:space-y-6 md:space-y-7">
-          <AssignmentsTab isTeacher={isEducatorParent} />
+        <TabsContent value="assignments" className="mt-0">
+          <AssignmentsTab isEducatorParent={isEducatorParent} />
         </TabsContent>
 
-        <TabsContent value="progress" className="overflow-y-auto space-y-5 sm:space-y-6 md:space-y-7">
-          <ProgressTab isTeacher={isEducatorParent} />
+        <TabsContent value="progress" className="mt-0">
+          <ProgressTab isEducatorParent={isEducatorParent} />
         </TabsContent>
 
-        <TabsContent value="reports" className="overflow-y-auto space-y-5 sm:space-y-6 md:space-y-7">
-          <ReportCardsTab isTeacher={isEducatorParent} />
+        <TabsContent value="reports" className="mt-0">
+          <ReportCardsTab isEducatorParent={isEducatorParent} />
         </TabsContent>
       </Tabs>
 
-      <OnboardingGuide isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} isTeacher={isEducatorParent} />
+      <OnboardingGuide open={showOnboarding} onOpenChange={setShowOnboarding} />
     </div>
   );
 }

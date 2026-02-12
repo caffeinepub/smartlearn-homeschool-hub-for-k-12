@@ -1,53 +1,61 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T19:20:33.852Z",
+  "generatedAt": "2026-02-12T01:31:12.021Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
     "total": 3,
-    "implemented": 3,
+    "implemented": 2,
     "items": [
       {
-        "id": "REQ-23",
-        "summary": "Ensure users who sign in as Educator/Parent (stored/created as the admin role) can access the full Lesson Plans creation features (Custom Lesson, AI Create Plan, and Library) in the same way as teachers, and ensure students cannot access lesson-plan creation controls.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/Dashboard.tsx",
-          "frontend/src/components/LessonPlansTab.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/Dashboard.tsx",
-          "frontend/src/components/LessonPlansTab.tsx"
-        ]
-      },
-      {
-        "id": "REQ-24",
-        "summary": "Add an “Upload Lesson” option inside the Lesson Plans “Create New Lesson Plan” dialog that lets an Educator/Parent create a lesson plan by uploading a local text-based file, extracting its contents on the client, and then saving it as a normal lesson plan using the existing create lesson plan flow.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/utils/lessonUpload.ts",
-          "frontend/src/components/LessonPlansTab.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/utils/lessonUpload.ts",
-          "frontend/src/components/LessonPlansTab.tsx"
-        ]
-      },
-      {
-        "id": "REQ-25",
-        "summary": "Verify that AI lesson plan draft generation and saving works for Educator/Parent users, and improve any user-facing authorization error messaging related to lesson plan creation so it does not refer to “teachers” only when the intended allowed role is Educator/Parent (admin).",
+        "id": "REQ-28",
+        "summary": "Audit and fine-tune frontend role-gating so Educator/Parent-only controls never appear for Student users, including during initial loading states and after identity/profile changes.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/LessonPlansTab.tsx"
+          "frontend/src/pages/Dashboard.tsx",
+          "frontend/src/components/LessonPlansTab.tsx",
+          "frontend/src/components/AssignmentsTab.tsx",
+          "frontend/src/components/OnboardingGuide.tsx",
+          "frontend/src/App.tsx"
         ],
         "matchedFiles": [
           "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/LessonPlansTab.tsx"
+          "frontend/src/pages/Dashboard.tsx",
+          "frontend/src/components/LessonPlansTab.tsx",
+          "frontend/src/components/AssignmentsTab.tsx",
+          "frontend/src/components/OnboardingGuide.tsx",
+          "frontend/src/App.tsx"
         ]
+      },
+      {
+        "id": "REQ-29",
+        "summary": "Standardize and improve user-facing authorization error handling for access-controlled actions (lesson creation, library add, AI draft generation, assignments, premium actions) so the app shows clear English messages instead of raw trap strings.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/utils/authorizationErrors.ts",
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/LessonPlansTab.tsx",
+          "frontend/src/components/AssignmentsTab.tsx",
+          "frontend/src/components/ReportCardsTab.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/utils/authorizationErrors.ts",
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/LessonPlansTab.tsx",
+          "frontend/src/components/AssignmentsTab.tsx",
+          "frontend/src/components/ReportCardsTab.tsx"
+        ]
+      },
+      {
+        "id": "REQ-30",
+        "summary": "Fine-tune backend authorization trap messages for access-controlled endpoints so they are consistent, role-accurate, and easy for the frontend to classify as authorization failures.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       }
     ]
   },
@@ -57,10 +65,15 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/src/App.tsx",
+    "frontend/src/components/AssignmentsTab.tsx",
     "frontend/src/components/LessonPlansTab.tsx",
+    "frontend/src/components/OnboardingGuide.tsx",
+    "frontend/src/components/ProgressTab.tsx",
+    "frontend/src/components/ReportCardsTab.tsx",
     "frontend/src/hooks/useQueries.ts",
     "frontend/src/pages/Dashboard.tsx",
-    "frontend/src/utils/lessonUpload.ts",
+    "frontend/src/utils/authorizationErrors.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

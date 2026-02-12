@@ -1,76 +1,74 @@
 {
   "kind": "build_request",
-  "title": "Enable parents (Educator/Parent role) to create, upload, and AI-generate lesson plans",
+  "title": "Fine-tune role-based access control UX and authorization messaging (Version 26)",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-23",
-      "text": "Ensure users who sign in as Educator/Parent (stored/created as the admin role) can access the full Lesson Plans creation features (Custom Lesson, AI Create Plan, and Library) in the same way as teachers, and ensure students cannot access lesson-plan creation controls.",
+      "id": "REQ-28",
+      "text": "Audit and fine-tune frontend role-gating so Educator/Parent-only controls never appear for Student users, including during initial loading states and after identity/profile changes.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Allow parents to create lesson plans upload lesson plans and create ai lesson plans"
+          "should fine tune it"
         ]
       },
       "acceptanceCriteria": [
-        "When the signed-in user has role=admin (Educator/Parent), the Lesson Plans tab shows the “Create Lesson Plan” button and the full creation dialog (Custom, AI, Library).",
-        "When the signed-in user has role=user (Student), the Lesson Plans tab does not show the “Create Lesson Plan” button or any creation/upload controls.",
-        "All user-facing text remains in English and is consistent with the Educator/Parent vs Student sign-in model already present in the app."
+        "When signed in as a Student (user role), the Lesson Plans UI does not show the “Create Lesson Plan” button and does not show the “AI Create” tab at any point (including during initial profile fetch/loading).",
+        "When signed in as an Educator/Parent (admin role), Lesson Plans creation controls (Custom, Upload, Library, AI Create) remain available as expected.",
+        "After logout/login switching between Student and Educator/Parent, the gated controls update correctly without requiring a hard refresh.",
+        "Dashboard prop naming and UI copy do not refer to “teacher” in user-facing labels when the intended role is Educator/Parent (admin)."
       ]
     },
     {
-      "id": "REQ-24",
-      "text": "Add an “Upload Lesson” option inside the Lesson Plans “Create New Lesson Plan” dialog that lets an Educator/Parent create a lesson plan by uploading a local text-based file, extracting its contents on the client, and then saving it as a normal lesson plan using the existing create lesson plan flow.",
+      "id": "REQ-29",
+      "text": "Standardize and improve user-facing authorization error handling for access-controlled actions (lesson creation, library add, AI draft generation, assignments, premium actions) so the app shows clear English messages instead of raw trap strings.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Allow parents to create lesson plans upload lesson plans and create ai lesson plans"
+          "should fine tune it"
         ]
       },
       "acceptanceCriteria": [
-        "The creation dialog includes a clearly labeled upload option (e.g., a 4th tab) for Educator/Parent users.",
-        "The upload flow requires the user to choose Subject and Grade Level (same as other creation paths).",
-        "The upload flow allows selecting a local file of a supported text-based format (at minimum: .txt and .md) and shows a clear validation error if the file type is unsupported.",
-        "On upload, the app reads the file content in the browser and uses it as the lesson content for saving.",
-        "The lesson title defaults to a sensible value (e.g., derived from filename) but remains editable before saving.",
-        "Clicking “Save” creates the lesson plan via the existing lesson creation mutation and the new lesson appears in the lesson plan list after success.",
-        "No uploaded file bytes are stored on the backend; only the extracted text content is saved as the lesson plan content."
+        "If the backend rejects an action due to missing permissions, the UI shows a consistent, clear toast message in English (e.g., “This action is only available to Educators/Parents.”) rather than surfacing raw backend error text.",
+        "Non-authorization errors (e.g., network issues, validation errors) still show a useful failure message that includes the underlying error message.",
+        "Existing React Query hooks in frontend/src/hooks/useQueries.ts follow the same authorization-detection pattern for all relevant mutations and queries (no inconsistent wording like “teachers only” for Educator/Parent flows)."
       ]
     },
     {
-      "id": "REQ-25",
-      "text": "Verify that AI lesson plan draft generation and saving works for Educator/Parent users, and improve any user-facing authorization error messaging related to lesson plan creation so it does not refer to “teachers” only when the intended allowed role is Educator/Parent (admin).",
-      "target": "both",
+      "id": "REQ-30",
+      "text": "Fine-tune backend authorization trap messages for access-controlled endpoints so they are consistent, role-accurate, and easy for the frontend to classify as authorization failures.",
+      "target": "backend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Allow parents to create lesson plans upload lesson plans and create ai lesson plans"
+          "should fine tune it"
         ]
       },
       "acceptanceCriteria": [
-        "An Educator/Parent user can generate an AI draft, edit it, and save it as a lesson plan successfully.",
-        "If a Student attempts to invoke lesson plan creation actions (e.g., by manipulating the UI), the app shows a clear English error message indicating they are not allowed to perform that action.",
-        "Any backend trap/error strings that are surfaced to end users for lesson-plan creation do not misleadingly say “teachers only” when the permission is actually tied to the Educator/Parent (admin) role."
+        "All backend Runtime.trap authorization failures for role/permission checks use consistent English phrasing that clearly indicates an authorization failure and the intended allowed role (e.g., Educators/Parents for admin-only actions).",
+        "Student-facing authorization failures do not mention “teachers” if the allowed role is Educator/Parent (admin).",
+        "No state schema migration is introduced unless strictly required for this change."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor in backend/main.mo (no additional backend services).",
-    "Only generate backend/migration.mo changes if a state upgrade is required; avoid migrations for frontend-only changes.",
-    "Do not modify files under frontend/src/components/ui or other immutable frontend paths listed in SYSTEM_CONTEXT; compose existing UI components instead."
+    "Backend must remain a single Motoko actor in backend/main.mo; do not introduce additional backend services.",
+    "Do not edit any files under frontend/src/components/ui or any other paths listed as immutable in SYSTEM_CONTEXT.",
+    "Use English for all user-facing UI text and toast messages.",
+    "Do not add third-party authentication providers; continue using Internet Identity."
   ],
   "nonGoals": [
-    "Supporting binary document parsing (e.g., PDF, DOCX) for lesson plan uploads.",
-    "Storing or serving uploaded original files from the backend (only extracted text is persisted as lesson content).",
-    "Adding third-party AI/LLM integrations for lesson plan generation."
+    "Adding new roles beyond the existing admin/user model.",
+    "Changing the published/unpublished (maintenance mode) feature behavior.",
+    "Introducing real-time communication features (WebSockets, chat, push notifications)."
   ],
   "imageRequirements": {
     "required": [],

@@ -1,13 +1,13 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T19:20:33.848Z",
-  "summary": "REQ-24 (Upload Lesson) appears implemented on the frontend via a new upload utility and additions to LessonPlansTab. Role-based access updates for Educator/Parent vs Student appear partially addressed in the Dashboard/LessonPlansTab interface, but backend-side authorization/error-string updates for lesson-plan creation are not evidenced in the provided diff. The diff also includes app publish/unpublish (maintenance mode) functionality that is not part of this BuildRequest.",
+  "generatedAt": "2026-02-12T01:31:12.018Z",
+  "summary": "Diff implements a new frontend authorization error classifier and applies it at least to publish/unpublish mutations, plus various frontend UX/refactors (role prop rename to isEducatorParent, loading guards in App, and claimed stricter role-gating in LessonPlans/Assignments). Backend authorization trap text was changed for publish/unpublish but still uses “Admin role required” and does not demonstrate the requested Educators/Parents-aligned, consistent authorization phrasing across all admin-only endpoints.",
   "missing_requirements": [
     {
-      "id": "REQ-25",
-      "requirement": "Improve any backend trap/error strings surfaced to end users for lesson-plan creation so they do not misleadingly say “teachers only” when permission is tied to Educator/Parent (admin).",
-      "reason": "The diff shows backend/main.mo changes, but the provided snippet contains publish/unpublish authorization strings and does not show any lesson-plan creation authorization checks or error/trap strings being updated. Since the file is truncated, this cannot be confirmed implemented.",
+      "id": "REQ-30",
+      "requirement": "Fine-tune backend authorization trap messages for access-controlled endpoints so they are consistent, role-accurate (Educators/Parents for admin-only actions), and easy for the frontend to classify as authorization failures.",
+      "reason": "The shown backend traps use the phrase \"Unauthorized: Admin role required\" rather than explicitly referencing the intended allowed role label (Educators/Parents). Also, the diff excerpt only shows publish/unpublish; it does not provide evidence that all other access-controlled endpoints were updated to the same consistent phrasing.",
       "evidence": [
         "backend/main.mo"
       ]
@@ -15,12 +15,26 @@
   ],
   "hallucinated_features": [
     {
-      "description": "Backend-controlled publish/unpublish (maintenance mode) endpoints and related frontend query/mutation hooks (publication status gating/admin publish controls).",
-      "reason": "Not requested in REQ-23/24/25 (the BuildRequest is scoped to lesson plan creation access and upload). The diff shows new/modified code around publication status and admin-only publish/unpublish actions.",
+      "description": "Global UI/typography styling overhaul (OKLCH color system, base font size changes, scrolling utilities).",
+      "reason": "Not requested by REQ-28/29/30, which focus on RBAC UX and authorization messaging.",
       "evidence": [
-        "backend/main.mo",
-        "frontend/src/hooks/useQueries.ts",
-        "frontend-file-summaries.txt"
+        "frontend-file-summaries.txt (frontend/src/index.css)"
+      ]
+    },
+    {
+      "description": "Onboarding guide content/UX refinements beyond role-wording constraints (multi-step onboarding dialog changes, spacing/responsive design).",
+      "reason": "REQ-28 only calls out avoiding “teacher” wording when the intended role is Educator/Parent; broader onboarding UX revisions are not requested.",
+      "evidence": [
+        "frontend/src/components/OnboardingGuide.tsx",
+        "frontend-file-summaries.txt (frontend/src/components/OnboardingGuide.tsx)"
+      ]
+    },
+    {
+      "description": "Progress tab layout/visual hierarchy adjustments.",
+      "reason": "Not requested by REQ-28/29/30.",
+      "evidence": [
+        "frontend/src/components/ProgressTab.tsx",
+        "frontend-file-summaries.txt (frontend/src/components/ProgressTab.tsx)"
       ]
     }
   ],
@@ -28,10 +42,15 @@
   "changed_files": [
     "backend/main.mo",
     "frontend-file-summaries.txt",
+    "frontend/src/App.tsx",
+    "frontend/src/components/AssignmentsTab.tsx",
     "frontend/src/components/LessonPlansTab.tsx",
+    "frontend/src/components/OnboardingGuide.tsx",
+    "frontend/src/components/ProgressTab.tsx",
+    "frontend/src/components/ReportCardsTab.tsx",
     "frontend/src/hooks/useQueries.ts",
     "frontend/src/pages/Dashboard.tsx",
-    "frontend/src/utils/lessonUpload.ts",
+    "frontend/src/utils/authorizationErrors.ts",
     "project_state.json"
   ]
 }

@@ -32,15 +32,15 @@ actor {
   };
 
   public shared ({ caller }) func publishApp() : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can publish the app");
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Admin role required");
     };
     publicationStatus := #published { publicationTime = Time.now() };
   };
 
   public shared ({ caller }) func unpublishApp(reason : Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can unpublish the app");
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Admin role required");
     };
     publicationStatus := #unpublished { reason };
   };
@@ -297,15 +297,15 @@ actor {
   };
 
   public shared ({ caller }) func setStripeConfiguration(config : Stripe.StripeConfiguration) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can configure Stripe");
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Admin role required");
     };
     configuration := ?config;
   };
 
   func getStripeConfiguration() : Stripe.StripeConfiguration {
     switch (configuration) {
-      case (null) { Runtime.trap("Stripe needs to be first configured") };
+      case (null) { Runtime.trap("Failed: Stripe needs to be first configured") };
       case (?value) { value };
     };
   };
@@ -320,9 +320,8 @@ actor {
 
   public shared ({ caller }) func purchasePremiumAccess() : async Text {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can purchase premium access");
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: User role required");
     };
 
     let items = [
@@ -343,12 +342,12 @@ actor {
 
   public shared ({ caller }) func createCheckoutSession(items : [Stripe.ShoppingItem], successUrl : Text, cancelUrl : Text) : async Text {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can create checkout sessions");
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: User role required");
     };
+
     switch (configuration) {
-      case (null) { Runtime.trap("Stripe needs to be first configured") };
+      case (null) { Runtime.trap("Failed: Stripe needs to be first configured") };
       case (?config) {
         // Validate premium product price
         let valid = items.all(
@@ -372,16 +371,15 @@ actor {
 
   public shared ({ caller }) func getStripeSessionStatus(sessionId : Text) : async Stripe.StripeSessionStatus {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can check session status");
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: User role required");
     };
     await Stripe.getSessionStatus(getStripeConfiguration(), sessionId, transform);
   };
 
   public shared ({ caller }) func grantPremiumAccess(user : Principal) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can grant premium access");
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Admin role required");
     };
     addPremiumAccess(user);
   };
@@ -397,9 +395,8 @@ actor {
 
   public shared ({ caller }) func cancelPremiumSubscription() : async Text {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can cancel subscriptions");
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: User role required");
     };
 
     switch (premiumAccess.get(caller)) {
@@ -425,7 +422,7 @@ actor {
     checkPublished();
 
     if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only check your own subscription status");
+      Runtime.trap("Unauthorized: Admin role or own account required");
     };
 
     switch (premiumAccess.get(user)) {
@@ -436,9 +433,8 @@ actor {
 
   public query ({ caller }) func getPremiumAccessStatus(user : Principal) : async Bool {
     checkPublished();
-
     if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only check your own premium status");
+      Runtime.trap("Unauthorized: Admin role or own account required");
     };
 
     switch (premiumAccess.get(user)) {
@@ -451,27 +447,24 @@ actor {
 
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view profiles");
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: User role required");
     };
     userProfiles.get(caller);
   };
 
   public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
     checkPublished();
-
     if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only view your own profile");
+      Runtime.trap("Unauthorized: Admin role or own account required");
     };
     userProfiles.get(user);
   };
 
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can save profiles");
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: User role required");
     };
     userProfiles.add(caller, profile);
   };
@@ -496,9 +489,8 @@ actor {
 
   public shared ({ caller }) func createCustomLesson(title : Text, subject : Subject, gradeLevel : GradeLevel, content : Text) : async LessonId {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only educators/parents can create lesson plans");
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Admin role required");
     };
 
     let lessonId = nextLessonId;
@@ -520,9 +512,8 @@ actor {
 
   public shared ({ caller }) func createLessonFromLibrary(libraryLessonId : LessonId) : async LessonId {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only educators/parents can create lesson plans from library");
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Admin role required");
     };
 
     switch (preMadeLessons.get(libraryLessonId)) {
@@ -549,18 +540,16 @@ actor {
 
   public query ({ caller }) func listAllLessonPlans() : async [LessonPlan] {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view lesson plans");
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: User role required");
     };
     lessonPlans.values().toArray().sort();
   };
 
   public query ({ caller }) func viewLessonsByGrade(gradeLevel : GradeLevel) : async [LessonPlan] {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view lessons");
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: User role required");
     };
     lessonPlans.values().toArray().filter(
       func(lp) {
@@ -571,9 +560,8 @@ actor {
 
   public query ({ caller }) func getLessonContent(lessonId : LessonId) : async Text {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view lesson content");
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: User role required");
     };
     switch (lessonPlans.get(lessonId)) {
       case (null) { Runtime.trap("Lesson not found") };
@@ -583,9 +571,8 @@ actor {
 
   public shared ({ caller }) func assignLessonToStudent(assignmentTitle : Text, lessonId : LessonId, description : Text, dueDate : Time.Time, studentId : StudentId) : async AssignmentId {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only educators/parents can assign lessons");
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Admin role required");
     };
 
     let assignmentId = nextAssignmentId;
@@ -615,16 +602,15 @@ actor {
 
   public query ({ caller }) func getLessonAssignmentDetails(assignmentId : AssignmentId) : async ?(Text, Text, Text, Time.Time) {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view assignment details");
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: User role required");
     };
 
     switch (assignments.get(assignmentId)) {
       case (null) { null };
       case (?assignment) {
         if (caller != assignment.studentId and not AccessControl.isAdmin(accessControlState, caller)) {
-          Runtime.trap("Unauthorized: Can only view your own assignments");
+          Runtime.trap("Unauthorized: Admin role or own account required");
         };
 
         switch (lessonPlans.get(assignment.lessonId)) {
@@ -639,16 +625,15 @@ actor {
 
   public shared ({ caller }) func submitAssignment(assignmentId : AssignmentId, submission : Text) : async () {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can submit assignments");
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: User role required");
     };
 
     switch (assignments.get(assignmentId)) {
       case (null) { Runtime.trap("Assignment not found") };
       case (?assignment) {
         if (caller != assignment.studentId) {
-          Runtime.trap("Unauthorized: Only the assigned student can submit this assignment");
+          Runtime.trap("Unauthorized: Own account required");
         };
 
         let updatedAssignment : Assignment = {
@@ -664,9 +649,8 @@ actor {
 
   public shared ({ caller }) func submitAssignmentWithGrade(assignmentId : AssignmentId, submission : Text, grade : Nat) : async () {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only educators/parents can submit assignments with grades");
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Admin role required");
     };
 
     switch (assignments.get(assignmentId)) {
@@ -686,9 +670,8 @@ actor {
 
   public shared ({ caller }) func gradeAssignment(assignmentId : AssignmentId, grade : Nat) : async () {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only educators/parents can grade assignments");
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Admin role required");
     };
 
     switch (assignments.get(assignmentId)) {
@@ -704,13 +687,12 @@ actor {
 
   public query ({ caller }) func getStudentAssignments(studentId : StudentId) : async [Assignment] {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view assignments");
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: User role required");
     };
 
     if (caller != studentId and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only view your own assignments");
+      Runtime.trap("Unauthorized: Admin role or own account required");
     };
 
     assignments.values().toArray().filter(
@@ -722,13 +704,12 @@ actor {
 
   public query ({ caller }) func getAssignmentsBySubject(studentId : StudentId, subjectId : Nat) : async [Assignment] {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view assignments");
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: User role required");
     };
 
     if (caller != studentId and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only view your own assignments");
+      Runtime.trap("Unauthorized: Admin role or own account required");
     };
 
     let filteredAssignments = List.empty<Assignment>();
@@ -779,13 +760,12 @@ actor {
 
   public query ({ caller }) func getGradeAveragesBySubject(studentId : StudentId, subjectId : Nat) : async Nat {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view grade averages");
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: User role required");
     };
 
     if (caller != studentId and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only view your own grades");
+      Runtime.trap("Unauthorized: Admin role or own account required");
     };
 
     calculateSubjectAverage(studentId, subjectId);
@@ -793,13 +773,12 @@ actor {
 
   public query ({ caller }) func getLessonAverageBySubject(studentId : StudentId, subjectId : Nat) : async Nat {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view lesson averages");
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: User role required");
     };
 
     if (caller != studentId and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only view your own averages");
+      Runtime.trap("Unauthorized: Admin role or own account required");
     };
 
     calculateSubjectAverage(studentId, subjectId);
@@ -876,24 +855,27 @@ actor {
 
   public shared ({ caller }) func generateReportCard(studentId : StudentId) : async ReportCardId {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can generate report cards");
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: User role required");
     };
 
     switch (premiumAccess.get(caller)) {
       case (null) {
-        Runtime.trap("You do not have premium access to generate report cards. Please subscribe to access this feature")
+        Runtime.trap(
+          "You do not have premium access to generate report cards. Please subscribe to access this feature"
+        );
       };
       case (?access) {
         if (Time.now() > access.expiration) {
-          Runtime.trap("Your premium access has expired. Please renew to access this feature");
+          Runtime.trap(
+            "Your premium access has expired. Please renew to access this feature"
+          );
         };
       };
     };
 
     if (caller != studentId and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only generate report cards for yourself or your students");
+      Runtime.trap("Unauthorized: Admin role or own account required");
     };
 
     let subjects = await getSubjects();
@@ -917,16 +899,15 @@ actor {
 
   public query ({ caller }) func getReportCard(reportCardId : ReportCardId) : async ReportCard {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view report cards");
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: User role required");
     };
 
     switch (reportCards.get(reportCardId)) {
       case (null) { Runtime.trap("Report card not found") };
       case (?reportCard) {
         if (caller != reportCard.studentId and not AccessControl.isAdmin(accessControlState, caller)) {
-          Runtime.trap("Unauthorized: Can only view your own report cards");
+          Runtime.trap("Unauthorized: Admin role or own account required");
         };
 
         if (Time.now() > reportCard.validUntil) {
@@ -940,13 +921,12 @@ actor {
 
   public query ({ caller }) func getAllReportCardsForStudent(studentId : StudentId) : async [ReportCard] {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view report cards");
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: User role required");
     };
 
     if (caller != studentId and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only view your own report cards");
+      Runtime.trap("Unauthorized: Admin role or own account required");
     };
 
     reportCards.values().toArray().filter(
@@ -958,13 +938,12 @@ actor {
 
   public query ({ caller }) func getStudentReportCards(studentId : StudentId) : async [ReportCard] {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view report cards");
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: User role required");
     };
 
     if (caller != studentId and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only view your own report cards");
+      Runtime.trap("Unauthorized: Admin role or own account required");
     };
 
     reportCards.values().toArray().filter(
@@ -1137,9 +1116,8 @@ actor {
 
   public query ({ caller }) func getOnboardingGuide() : async OnboardingGuide {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can access the onboarding guide");
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: User role required");
     };
 
     {
@@ -1216,11 +1194,8 @@ actor {
   // New backend AI-style lesson plan generator (no external API call)
   public query ({ caller }) func generateAiLessonPlanDraft(request : LessonPlanRequest) : async LessonPlanDraft {
     checkPublished();
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap(
-        "Unauthorized: Only educators/parents can generate AI lesson plan drafts"
-      );
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Admin role required");
     };
     // Compose lesson plan title
     let topic =

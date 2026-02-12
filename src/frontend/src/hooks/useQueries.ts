@@ -5,6 +5,7 @@ import type { UserProfile, LessonPlan, Assignment, Subject, PreMadeLesson, Repor
 import { UserRole } from '../backend';
 import { Principal } from '@dfinity/principal';
 import { toast } from 'sonner';
+import { classifyAuthorizationError } from '../utils/authorizationErrors';
 
 export function useGetPublicationStatus() {
   const { actor, isFetching: actorFetching } = useActor();
@@ -26,7 +27,7 @@ export function useIsCallerAdmin() {
   const { identity } = useInternetIdentity();
 
   return useQuery<boolean>({
-    queryKey: ['isCallerAdmin'],
+    queryKey: ['isCallerAdmin', identity?.getPrincipal().toString()],
     queryFn: async () => {
       if (!actor) return false;
       return actor.isCallerAdmin();
@@ -50,7 +51,12 @@ export function usePublishApp() {
       toast.success('App published successfully');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to publish app: ${error.message}`);
+      const { isAuthorizationError, message } = classifyAuthorizationError(error);
+      if (isAuthorizationError) {
+        toast.error(message);
+      } else {
+        toast.error(`Failed to publish app: ${message}`);
+      }
     },
   });
 }
@@ -69,28 +75,34 @@ export function useUnpublishApp() {
       toast.success('App unpublished successfully');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to unpublish app: ${error.message}`);
+      const { isAuthorizationError, message } = classifyAuthorizationError(error);
+      if (isAuthorizationError) {
+        toast.error(message);
+      } else {
+        toast.error(`Failed to unpublish app: ${message}`);
+      }
     },
   });
 }
 
 export function useGetCallerUserProfile() {
   const { actor, isFetching: actorFetching } = useActor();
+  const { identity } = useInternetIdentity();
 
   const query = useQuery<UserProfile | null>({
-    queryKey: ['currentUserProfile'],
+    queryKey: ['currentUserProfile', identity?.getPrincipal().toString()],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
       return actor.getCallerUserProfile();
     },
-    enabled: !!actor && !actorFetching,
+    enabled: !!actor && !actorFetching && !!identity,
     retry: false,
   });
 
   return {
     ...query,
     isLoading: actorFetching || query.isLoading,
-    isFetched: !!actor && query.isFetched,
+    isFetched: !!actor && !!identity && query.isFetched,
   };
 }
 
@@ -115,14 +127,15 @@ export function useSaveCallerUserProfile() {
 
 export function useGetCallerUserRole() {
   const { actor, isFetching: actorFetching } = useActor();
+  const { identity } = useInternetIdentity();
 
   return useQuery<UserRole>({
-    queryKey: ['currentUserRole'],
+    queryKey: ['currentUserRole', identity?.getPrincipal().toString()],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
       return actor.getCallerUserRole();
     },
-    enabled: !!actor && !actorFetching,
+    enabled: !!actor && !actorFetching && !!identity,
   });
 }
 
@@ -179,11 +192,11 @@ export function useCreateCustomLesson() {
       toast.success('Lesson plan created successfully');
     },
     onError: (error: Error) => {
-      const message = error.message.toLowerCase();
-      if (message.includes('unauthorized') || message.includes('only educators') || message.includes('only teachers')) {
-        toast.error('Only Educators/Parents can create lesson plans');
+      const { isAuthorizationError, message } = classifyAuthorizationError(error);
+      if (isAuthorizationError) {
+        toast.error(message);
       } else {
-        toast.error(`Failed to create lesson: ${error.message}`);
+        toast.error(`Failed to create lesson: ${message}`);
       }
     },
   });
@@ -203,11 +216,11 @@ export function useCreateLessonFromLibrary() {
       toast.success('Lesson added from library successfully');
     },
     onError: (error: Error) => {
-      const message = error.message.toLowerCase();
-      if (message.includes('unauthorized') || message.includes('only educators') || message.includes('only teachers')) {
-        toast.error('Only Educators/Parents can add lessons from library');
+      const { isAuthorizationError, message } = classifyAuthorizationError(error);
+      if (isAuthorizationError) {
+        toast.error(message);
       } else {
-        toast.error(`Failed to add lesson from library: ${error.message}`);
+        toast.error(`Failed to add lesson from library: ${message}`);
       }
     },
   });
@@ -225,11 +238,11 @@ export function useGenerateAiLessonPlanDraft() {
       toast.success('AI lesson plan draft generated successfully');
     },
     onError: (error: Error) => {
-      const message = error.message.toLowerCase();
-      if (message.includes('unauthorized') || message.includes('only educators') || message.includes('only teachers')) {
-        toast.error('Only Educators/Parents can generate AI lesson plans');
+      const { isAuthorizationError, message } = classifyAuthorizationError(error);
+      if (isAuthorizationError) {
+        toast.error(message);
       } else {
-        toast.error(`Failed to generate lesson plan: ${error.message}`);
+        toast.error(`Failed to generate lesson plan: ${message}`);
       }
     },
   });
@@ -261,7 +274,12 @@ export function useAssignLessonToStudent() {
       toast.success('Lesson assigned successfully');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to assign lesson: ${error.message}`);
+      const { isAuthorizationError, message } = classifyAuthorizationError(error);
+      if (isAuthorizationError) {
+        toast.error(message);
+      } else {
+        toast.error(`Failed to assign lesson: ${message}`);
+      }
     },
   });
 }
@@ -314,7 +332,12 @@ export function useGradeAssignment() {
       toast.success('Assignment graded successfully');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to grade assignment: ${error.message}`);
+      const { isAuthorizationError, message } = classifyAuthorizationError(error);
+      if (isAuthorizationError) {
+        toast.error(message);
+      } else {
+        toast.error(`Failed to grade assignment: ${message}`);
+      }
     },
   });
 }
@@ -360,7 +383,12 @@ export function useSetStripeConfiguration() {
       toast.success('Stripe configured successfully');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to configure Stripe: ${error.message}`);
+      const { isAuthorizationError, message } = classifyAuthorizationError(error);
+      if (isAuthorizationError) {
+        toast.error(message);
+      } else {
+        toast.error(`Failed to configure Stripe: ${message}`);
+      }
     },
   });
 }
@@ -469,5 +497,29 @@ export function useGetAppStorePreview() {
       return actor.getAppStorePreview();
     },
     enabled: !!actor && !actorFetching,
+  });
+}
+
+export function useGrantPremiumAccess() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (user: Principal) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.grantPremiumAccess(user);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['premiumAccess'] });
+      toast.success('Premium access granted successfully');
+    },
+    onError: (error: Error) => {
+      const { isAuthorizationError, message } = classifyAuthorizationError(error);
+      if (isAuthorizationError) {
+        toast.error(message);
+      } else {
+        toast.error(`Failed to grant premium access: ${message}`);
+      }
+    },
   });
 }
