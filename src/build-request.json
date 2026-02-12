@@ -1,77 +1,104 @@
 {
   "kind": "build_request",
-  "title": "Fine-tune role-based access control UX and authorization messaging (Version 26)",
-  "priority": "normal",
+  "title": "Fix production web app not working properly (stability + loading + service worker caching)",
+  "priority": "high",
   "requirements": [
     {
-      "id": "REQ-28",
-      "text": "Audit and fine-tune frontend role-gating so Educator/Parent-only controls never appear for Student users, including during initial loading states and after identity/profile changes.",
+      "id": "REQ-31",
+      "text": "Add a global React error boundary that catches unexpected runtime/render errors anywhere in the app and shows a dedicated recovery screen instead of a blank/partially broken UI.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-5"
         ],
         "quotes": [
-          "should fine tune it"
+          "app / web page not working properly"
         ]
       },
       "acceptanceCriteria": [
-        "When signed in as a Student (user role), the Lesson Plans UI does not show the “Create Lesson Plan” button and does not show the “AI Create” tab at any point (including during initial profile fetch/loading).",
-        "When signed in as an Educator/Parent (admin role), Lesson Plans creation controls (Custom, Upload, Library, AI Create) remain available as expected.",
-        "After logout/login switching between Student and Educator/Parent, the gated controls update correctly without requiring a hard refresh.",
-        "Dashboard prop naming and UI copy do not refer to “teacher” in user-facing labels when the intended role is Educator/Parent (admin)."
+        "If any component throws during render/effects, users see a friendly error screen with clear English text and no infinite loading state.",
+        "The error screen includes actions to: (1) reload the page and (2) clear local app data (at minimum: clear relevant localStorage/sessionStorage keys used by the app) and then reload.",
+        "The error boundary logs the underlying error to console with a consistent prefix so it is easy to diagnose from browser devtools."
       ]
     },
     {
-      "id": "REQ-29",
-      "text": "Standardize and improve user-facing authorization error handling for access-controlled actions (lesson creation, library add, AI draft generation, assignments, premium actions) so the app shows clear English messages instead of raw trap strings.",
+      "id": "REQ-32",
+      "text": "Improve the '/' startup flow so that failed initial data loads (e.g., publication status or app store preview) do not result in an indefinite spinner; instead show a clear, actionable error state and a retry action.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-5"
         ],
         "quotes": [
-          "should fine tune it"
+          "app / web page not working properly"
         ]
       },
       "acceptanceCriteria": [
-        "If the backend rejects an action due to missing permissions, the UI shows a consistent, clear toast message in English (e.g., “This action is only available to Educators/Parents.”) rather than surfacing raw backend error text.",
-        "Non-authorization errors (e.g., network issues, validation errors) still show a useful failure message that includes the underlying error message.",
-        "Existing React Query hooks in frontend/src/hooks/useQueries.ts follow the same authorization-detection pattern for all relevant mutations and queries (no inconsistent wording like “teachers only” for Educator/Parent flows)."
+        "When useGetPublicationStatus fails, the index route displays a visible error message in English (not a raw stack trace) and includes a “Try again” action that refetches.",
+        "When useGetAppStorePreview fails on the Landing Page, the page shows a visible error message in English and includes a “Try again” action that refetches.",
+        "Loading states remain unchanged when requests are in-flight and succeeding (no regressions to current spinners)."
       ]
     },
     {
-      "id": "REQ-30",
-      "text": "Fine-tune backend authorization trap messages for access-controlled endpoints so they are consistent, role-accurate, and easy for the frontend to classify as authorization failures.",
-      "target": "backend",
+      "id": "REQ-33",
+      "text": "Harden the PWA service worker caching strategy to prevent broken/stale deployments (white screen, old JS/CSS served) after Version 27 production updates.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-5"
         ],
         "quotes": [
-          "should fine tune it"
+          "app / web page not working properly"
         ]
       },
       "acceptanceCriteria": [
-        "All backend Runtime.trap authorization failures for role/permission checks use consistent English phrasing that clearly indicates an authorization failure and the intended allowed role (e.g., Educators/Parents for admin-only actions).",
-        "Student-facing authorization failures do not mention “teachers” if the allowed role is Educator/Parent (admin).",
-        "No state schema migration is introduced unless strictly required for this change."
+        "Service worker cache keys are versioned such that a new deployment reliably invalidates prior cached assets (static + dynamic).",
+        "Navigation requests (HTML shell) do not get stuck on a stale cached index.html after a new deployment; the app loads the latest version after a normal refresh.",
+        "If a new service worker is installed and waiting, the app provides a clear update path (either auto-activate safely or prompt the user in English to refresh to update).",
+        "Offline behavior remains functional: when offline, navigation still falls back to a cached page rather than failing with a network error."
+      ]
+    },
+    {
+      "id": "REQ-34",
+      "text": "Standardize and surface initialization failures related to actor/identity availability so users understand why the app is not working (instead of silent failures).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-5"
+        ],
+        "quotes": [
+          "app / web page not working properly"
+        ]
+      },
+      "acceptanceCriteria": [
+        "If the backend actor is not available during key queries/mutations, the UI shows a clear English message indicating the connection is not ready and provides a retry option.",
+        "Error toasts and/or inline errors use consistent English phrasing and do not expose raw trap strings or low-level technical jargon.",
+        "No changes are made to immutable hook files; improvements are implemented via composition/wrappers in editable files."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor in backend/main.mo; do not introduce additional backend services.",
-    "Do not edit any files under frontend/src/components/ui or any other paths listed as immutable in SYSTEM_CONTEXT.",
-    "Use English for all user-facing UI text and toast messages.",
-    "Do not add third-party authentication providers; continue using Internet Identity."
+    "Do not edit files under frontend/src/hooks/useInternetIdentity.ts or frontend/src/hooks/useActor.ts (immutable paths); implement fixes via composition in other frontend files.",
+    "Keep the backend architecture as a single Motoko actor in backend/main.mo; introduce backend changes only if needed to fix the reported malfunction.",
+    "All user-facing text introduced/modified by this work must be in clear English."
   ],
   "nonGoals": [
-    "Adding new roles beyond the existing admin/user model.",
-    "Changing the published/unpublished (maintenance mode) feature behavior.",
-    "Introducing real-time communication features (WebSockets, chat, push notifications)."
+    "Adding new product features unrelated to stability/loading (e.g., new lesson plan capabilities, new premium features).",
+    "Introducing third-party monitoring/analytics services or external logging backends.",
+    "Changing authentication provider (Internet Identity remains the only auth mechanism)."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

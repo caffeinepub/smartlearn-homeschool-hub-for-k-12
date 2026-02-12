@@ -2,15 +2,12 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-audit-and-fine-tune-frontend-role-gating-so-educator-parent-only-controls-never-appear-for-student-users-including-during-initial-loading-states-and-after-identity-profile-changes",
-      "featureTitle": "Audit and fine-tune frontend role-gating so Educator/Parent-only controls never appear for Student users, including during initial loading states and after identity/profile changes.",
+      "featureId": "feature-add-a-global-react-error-boundary-that-catches-unexpected-runtime-render-errors-anywhere-in-the-app-and-shows-a-dedicated-recovery-screen-instead-of-a-blank-partially-broken-ui",
+      "featureTitle": "Add a global React error boundary that catches unexpected runtime/render errors anywhere in the app and shows a dedicated recovery screen instead of a blank/partially broken UI.",
       "files": [
         "frontend/src/App.tsx",
-        "frontend/src/components/AssignmentsTab.tsx",
-        "frontend/src/components/LessonPlansTab.tsx",
-        "frontend/src/components/OnboardingGuide.tsx",
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/Dashboard.tsx"
+        "frontend/src/components/GlobalErrorBoundary.tsx",
+        "frontend/src/utils/clearAppData.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -23,19 +20,17 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-28"
+        "REQ-31"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-standardize-and-improve-user-facing-authorization-error-handling-for-access-controlled-actions-lesson-creation-library-add-ai-draft-generation-assignments-premium-actions-so-the-app-shows-clear-english-messages-instead-of-raw-trap-strings",
-      "featureTitle": "Standardize and improve user-facing authorization error handling for access-controlled actions (lesson creation, library add, AI draft generation, assignments, premium actions) so the app shows clear English messages instead of raw trap strings.",
+      "featureId": "feature-improve-the-startup-flow-so-that-failed-initial-data-loads-e-g-publication-status-or-app-store-preview-do-not-result-in-an-indefinite-spinner-instead-show-a-clear-actionable-error-state-and-a-retry-action",
+      "featureTitle": "Improve the '/' startup flow so that failed initial data loads (e.g., publication status or app store preview) do not result in an indefinite spinner; instead show a clear, actionable error state and a retry action.",
       "files": [
-        "frontend/src/components/AssignmentsTab.tsx",
-        "frontend/src/components/LessonPlansTab.tsx",
-        "frontend/src/components/ReportCardsTab.tsx",
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/utils/authorizationErrors.ts"
+        "frontend/src/App.tsx",
+        "frontend/src/components/QueryErrorState.tsx",
+        "frontend/src/pages/LandingPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -48,7 +43,56 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-29"
+        "REQ-32"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-harden-the-pwa-service-worker-caching-strategy-to-prevent-broken-stale-deployments-white-screen-old-js-css-served-after-version-27-production-updates",
+      "featureTitle": "Harden the PWA service worker caching strategy to prevent broken/stale deployments (white screen, old JS/CSS served) after Version 27 production updates.",
+      "files": [
+        "frontend/public/service-worker.js",
+        "frontend/src/App.tsx",
+        "frontend/src/components/ServiceWorkerUpdatePrompt.tsx",
+        "frontend/src/hooks/usePWA.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-33"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-standardize-and-surface-initialization-failures-related-to-actor-identity-availability-so-users-understand-why-the-app-is-not-working-instead-of-silent-failures",
+      "featureTitle": "Standardize and surface initialization failures related to actor/identity availability so users understand why the app is not working (instead of silent failures).",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/components/ActorNotReadyState.tsx",
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/LandingPage.tsx",
+        "frontend/src/utils/userFacingErrors.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-34"
       ],
       "confidence": "high"
     }

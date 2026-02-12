@@ -28,19 +28,50 @@ export function usePWA(): PWAStatus {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Check for service worker updates
+    // Enhanced service worker update detection
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then((registration) => {
+      // Check for updates on registration
+      navigator.serviceWorker.register('/service-worker.js').then((registration) => {
+        // Check for updates periodically
+        const checkForUpdates = () => {
+          registration.update().catch((err) => {
+            console.warn('[usePWA] Update check failed:', err);
+          });
+        };
+
+        // Check for updates every 60 seconds
+        const updateInterval = setInterval(checkForUpdates, 60000);
+
+        // Listen for new service worker installing
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;
           if (newWorker) {
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                console.log('[usePWA] New service worker installed, update available');
                 setIsUpdateAvailable(true);
               }
             });
           }
         });
+
+        // Check if there's already a waiting worker
+        if (registration.waiting) {
+          console.log('[usePWA] Service worker already waiting');
+          setIsUpdateAvailable(true);
+        }
+
+        return () => {
+          clearInterval(updateInterval);
+        };
+      }).catch((err) => {
+        console.error('[usePWA] Service worker registration failed:', err);
+      });
+
+      // Listen for controller change (new SW activated)
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        console.log('[usePWA] Controller changed, reloading...');
+        window.location.reload();
       });
     }
 

@@ -5,12 +5,24 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Check, ArrowRight } from 'lucide-react';
 import RoleSignInButtons from '../components/RoleSignInButtons';
+import { QueryErrorState } from '../components/QueryErrorState';
+import { ActorNotReadyState } from '../components/ActorNotReadyState';
+import { normalizeErrorMessage } from '../utils/userFacingErrors';
 
 export default function LandingPage() {
   const { identity } = useInternetIdentity();
-  const { data: preview, isLoading } = useGetAppStorePreview();
+  const { 
+    data: preview, 
+    isLoading,
+    isError,
+    error: errorData,
+    refetch
+  } = useGetAppStorePreview();
 
-  if (isLoading || !preview) {
+  const isAuthenticated = !!identity;
+
+  // Handle loading state
+  if (isLoading) {
     return (
       <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center">
         <div className="text-center">
@@ -21,7 +33,23 @@ export default function LandingPage() {
     );
   }
 
-  const isAuthenticated = !!identity;
+  // Handle error state
+  if (isError || !preview) {
+    const errorMessage = normalizeErrorMessage(errorData);
+    
+    // Check if it's an actor not ready error
+    if (errorMessage.includes('connection') || errorMessage.includes('not ready')) {
+      return <ActorNotReadyState onRetry={() => refetch()} />;
+    }
+
+    return (
+      <QueryErrorState
+        title="Unable to load preview"
+        message={errorMessage}
+        onRetry={() => refetch()}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen overflow-y-auto bg-gradient-to-b from-background via-primary/5 to-background">

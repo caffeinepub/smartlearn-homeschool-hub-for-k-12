@@ -1,79 +1,102 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T01:31:12.021Z",
+  "generatedAt": "2026-02-12T01:48:22.666Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 2,
+    "total": 4,
+    "implemented": 4,
     "items": [
       {
-        "id": "REQ-28",
-        "summary": "Audit and fine-tune frontend role-gating so Educator/Parent-only controls never appear for Student users, including during initial loading states and after identity/profile changes.",
+        "id": "REQ-31",
+        "summary": "Add a global React error boundary that catches unexpected runtime/render errors anywhere in the app and shows a dedicated recovery screen instead of a blank/partially broken UI.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/pages/Dashboard.tsx",
-          "frontend/src/components/LessonPlansTab.tsx",
-          "frontend/src/components/AssignmentsTab.tsx",
-          "frontend/src/components/OnboardingGuide.tsx",
-          "frontend/src/App.tsx"
+          "frontend/src/components/GlobalErrorBoundary.tsx",
+          "frontend/src/utils/clearAppData.ts",
+          "frontend/src/App.tsx",
+          "frontend/src/main.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/pages/Dashboard.tsx",
-          "frontend/src/components/LessonPlansTab.tsx",
-          "frontend/src/components/AssignmentsTab.tsx",
-          "frontend/src/components/OnboardingGuide.tsx",
+          "frontend/src/components/GlobalErrorBoundary.tsx",
+          "frontend/src/utils/clearAppData.ts",
           "frontend/src/App.tsx"
         ]
       },
       {
-        "id": "REQ-29",
-        "summary": "Standardize and improve user-facing authorization error handling for access-controlled actions (lesson creation, library add, AI draft generation, assignments, premium actions) so the app shows clear English messages instead of raw trap strings.",
+        "id": "REQ-32",
+        "summary": "Improve the '/' startup flow so that failed initial data loads (e.g., publication status or app store preview) do not result in an indefinite spinner; instead show a clear, actionable error state and a retry action.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/utils/authorizationErrors.ts",
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/LessonPlansTab.tsx",
-          "frontend/src/components/AssignmentsTab.tsx",
-          "frontend/src/components/ReportCardsTab.tsx"
+          "frontend/src/components/QueryErrorState.tsx",
+          "frontend/src/App.tsx",
+          "frontend/src/pages/LandingPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/utils/authorizationErrors.ts",
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/LessonPlansTab.tsx",
-          "frontend/src/components/AssignmentsTab.tsx",
-          "frontend/src/components/ReportCardsTab.tsx"
+          "frontend/src/components/QueryErrorState.tsx",
+          "frontend/src/App.tsx",
+          "frontend/src/pages/LandingPage.tsx"
         ]
       },
       {
-        "id": "REQ-30",
-        "summary": "Fine-tune backend authorization trap messages for access-controlled endpoints so they are consistent, role-accurate, and easy for the frontend to classify as authorization failures.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "id": "REQ-33",
+        "summary": "Harden the PWA service worker caching strategy to prevent broken/stale deployments (white screen, old JS/CSS served) after Version 27 production updates.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/public/service-worker.js",
+          "frontend/src/hooks/usePWA.ts",
+          "frontend/src/components/ServiceWorkerUpdatePrompt.tsx",
+          "frontend/src/App.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/public/service-worker.js",
+          "frontend/src/hooks/usePWA.ts",
+          "frontend/src/components/ServiceWorkerUpdatePrompt.tsx",
+          "frontend/src/App.tsx"
+        ]
+      },
+      {
+        "id": "REQ-34",
+        "summary": "Standardize and surface initialization failures related to actor/identity availability so users understand why the app is not working (instead of silent failures).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/utils/userFacingErrors.ts",
+          "frontend/src/components/ActorNotReadyState.tsx",
+          "frontend/src/App.tsx",
+          "frontend/src/pages/LandingPage.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/utils/userFacingErrors.ts",
+          "frontend/src/components/ActorNotReadyState.tsx",
+          "frontend/src/App.tsx",
+          "frontend/src/pages/LandingPage.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/public/service-worker.js",
     "frontend/src/App.tsx",
-    "frontend/src/components/AssignmentsTab.tsx",
-    "frontend/src/components/LessonPlansTab.tsx",
-    "frontend/src/components/OnboardingGuide.tsx",
+    "frontend/src/components/ActorNotReadyState.tsx",
+    "frontend/src/components/GlobalErrorBoundary.tsx",
     "frontend/src/components/ProgressTab.tsx",
+    "frontend/src/components/QueryErrorState.tsx",
     "frontend/src/components/ReportCardsTab.tsx",
+    "frontend/src/components/ServiceWorkerUpdatePrompt.tsx",
+    "frontend/src/hooks/usePWA.ts",
     "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/Dashboard.tsx",
-    "frontend/src/utils/authorizationErrors.ts",
+    "frontend/src/pages/LandingPage.tsx",
+    "frontend/src/utils/clearAppData.ts",
+    "frontend/src/utils/userFacingErrors.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

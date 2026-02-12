@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 21,
+  "projectStateVersion": 23,
   "summary": "App requiring separate sign-in flows for educators/parents vs students",
   "architectural_notes": [
     "Deployment/publishing workflow: user requested to publish the app after applying the latest update (toggle backend maintenance mode from unpublished to published after build).",
@@ -8,7 +8,8 @@
     "Project renamed; update branding/UI copy to reflect new name “Homeschool Hub K-12” across web and app."
   ],
   "known_issues": [
-    "Access control behavior in Version 26 needs fine-tuning (user reported it still doesn’t feel right)."
+    "Access control behavior in Version 26 needs fine-tuning (user reported it still doesn’t feel right).",
+    "App / web page not working properly (user report after Version 27 production deploy)."
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -185,6 +186,38 @@
       "title": "Standardize and improve user-facing authorization error handling for access-controlled actions (lesson creation, library add, AI draft generation, assignments, premium actions) so the app shows clear English messages instead of raw trap strings.",
       "reqIds": [
         "REQ-29"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-global-react-error-boundary-that-catches-unexpected-runtime-render-errors-anywhere-in-the-app-and-shows-a-dedicated-recovery-screen-instead-of-a-blank-partially-broken-ui",
+      "title": "Add a global React error boundary that catches unexpected runtime/render errors anywhere in the app and shows a dedicated recovery screen instead of a blank/partially broken UI.",
+      "reqIds": [
+        "REQ-31"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-improve-the-startup-flow-so-that-failed-initial-data-loads-e-g-publication-status-or-app-store-preview-do-not-result-in-an-indefinite-spinner-instead-show-a-clear-actionable-error-state-and-a-retry-action",
+      "title": "Improve the '/' startup flow so that failed initial data loads (e.g., publication status or app store preview) do not result in an indefinite spinner; instead show a clear, actionable error state and a retry action.",
+      "reqIds": [
+        "REQ-32"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-harden-the-pwa-service-worker-caching-strategy-to-prevent-broken-stale-deployments-white-screen-old-js-css-served-after-version-27-production-updates",
+      "title": "Harden the PWA service worker caching strategy to prevent broken/stale deployments (white screen, old JS/CSS served) after Version 27 production updates.",
+      "reqIds": [
+        "REQ-33"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-standardize-and-surface-initialization-failures-related-to-actor-identity-availability-so-users-understand-why-the-app-is-not-working-instead-of-silent-failures",
+      "title": "Standardize and surface initialization failures related to actor/identity availability so users understand why the app is not working (instead of silent failures).",
+      "reqIds": [
+        "REQ-34"
       ],
       "version": 1
     }

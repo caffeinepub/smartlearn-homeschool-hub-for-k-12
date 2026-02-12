@@ -14,7 +14,13 @@ import Takedown from './pages/Takedown';
 import ProfileSetup from './components/ProfileSetup';
 import InstallPrompt from './components/InstallPrompt';
 import OfflineIndicator from './components/OfflineIndicator';
+import { GlobalErrorBoundary } from './components/GlobalErrorBoundary';
+import { QueryErrorState } from './components/QueryErrorState';
+import { ActorNotReadyState } from './components/ActorNotReadyState';
+import { ServiceWorkerUpdatePrompt } from './components/ServiceWorkerUpdatePrompt';
+import { usePWA } from './hooks/usePWA';
 import { Loader2 } from 'lucide-react';
+import { normalizeErrorMessage } from './utils/userFacingErrors';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,6 +32,8 @@ const queryClient = new QueryClient({
 });
 
 function Layout() {
+  const { isUpdateAvailable } = usePWA();
+
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden">
       <Header />
@@ -35,6 +43,7 @@ function Layout() {
       <Footer />
       <InstallPrompt />
       <OfflineIndicator />
+      <ServiceWorkerUpdatePrompt isUpdateAvailable={isUpdateAvailable} />
     </div>
   );
 }
@@ -73,8 +82,18 @@ declare module '@tanstack/react-router' {
 
 function IndexPage() {
   const { identity, isInitializing } = useInternetIdentity();
-  const { data: publicationStatus, isLoading: publicationLoading } = useGetPublicationStatus();
-  const { data: userProfile, isLoading: profileLoading, isFetched: profileFetched } = useGetCallerUserProfile();
+  const { 
+    data: publicationStatus, 
+    isLoading: publicationLoading,
+    isError: publicationError,
+    error: publicationErrorData,
+    refetch: refetchPublication
+  } = useGetPublicationStatus();
+  const { 
+    data: userProfile, 
+    isLoading: profileLoading, 
+    isFetched: profileFetched 
+  } = useGetCallerUserProfile();
 
   const isAuthenticated = !!identity;
 
@@ -84,6 +103,24 @@ function IndexPage() {
       <div className="flex min-h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
+    );
+  }
+
+  // Handle publication status errors
+  if (publicationError) {
+    const errorMessage = normalizeErrorMessage(publicationErrorData);
+    
+    // Check if it's an actor not ready error
+    if (errorMessage.includes('connection') || errorMessage.includes('not ready')) {
+      return <ActorNotReadyState onRetry={() => refetchPublication()} />;
+    }
+
+    return (
+      <QueryErrorState
+        title="Unable to check app status"
+        message={errorMessage}
+        onRetry={() => refetchPublication()}
+      />
     );
   }
 
@@ -125,11 +162,13 @@ function IndexPage() {
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <RouterProvider router={router} />
-        <Toaster />
-      </ThemeProvider>
-    </QueryClientProvider>
+    <GlobalErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <RouterProvider router={router} />
+          <Toaster />
+        </ThemeProvider>
+      </QueryClientProvider>
+    </GlobalErrorBoundary>
   );
 }

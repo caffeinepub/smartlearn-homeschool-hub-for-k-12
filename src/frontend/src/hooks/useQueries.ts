@@ -6,6 +6,7 @@ import { UserRole } from '../backend';
 import { Principal } from '@dfinity/principal';
 import { toast } from 'sonner';
 import { classifyAuthorizationError } from '../utils/authorizationErrors';
+import { normalizeErrorMessage } from '../utils/userFacingErrors';
 
 export function useGetPublicationStatus() {
   const { actor, isFetching: actorFetching } = useActor();
@@ -50,13 +51,10 @@ export function usePublishApp() {
       queryClient.invalidateQueries({ queryKey: ['publicationStatus'] });
       toast.success('App published successfully');
     },
-    onError: (error: Error) => {
-      const { isAuthorizationError, message } = classifyAuthorizationError(error);
-      if (isAuthorizationError) {
-        toast.error(message);
-      } else {
-        toast.error(`Failed to publish app: ${message}`);
-      }
+    onError: (error: unknown) => {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      const message = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(message));
     },
   });
 }
@@ -74,13 +72,10 @@ export function useUnpublishApp() {
       queryClient.invalidateQueries({ queryKey: ['publicationStatus'] });
       toast.success('App unpublished successfully');
     },
-    onError: (error: Error) => {
-      const { isAuthorizationError, message } = classifyAuthorizationError(error);
-      if (isAuthorizationError) {
-        toast.error(message);
-      } else {
-        toast.error(`Failed to unpublish app: ${message}`);
-      }
+    onError: (error: unknown) => {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      const message = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(message));
     },
   });
 }
@@ -102,13 +97,14 @@ export function useGetCallerUserProfile() {
   return {
     ...query,
     isLoading: actorFetching || query.isLoading,
-    isFetched: !!actor && !!identity && query.isFetched,
+    isFetched: !!actor && query.isFetched,
   };
 }
 
 export function useSaveCallerUserProfile() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+  const { identity } = useInternetIdentity();
 
   return useMutation({
     mutationFn: async (profile: UserProfile) => {
@@ -116,26 +112,29 @@ export function useSaveCallerUserProfile() {
       return actor.saveCallerUserProfile(profile);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+      queryClient.invalidateQueries({ queryKey: ['currentUserProfile', identity?.getPrincipal().toString()] });
       toast.success('Profile saved successfully');
     },
-    onError: (error: Error) => {
-      toast.error(`Failed to save profile: ${error.message}`);
+    onError: (error: unknown) => {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      const message = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(message));
     },
   });
 }
 
-export function useGetCallerUserRole() {
+export function useGetAppStorePreview() {
   const { actor, isFetching: actorFetching } = useActor();
-  const { identity } = useInternetIdentity();
 
-  return useQuery<UserRole>({
-    queryKey: ['currentUserRole', identity?.getPrincipal().toString()],
+  return useQuery<AppStorePreview>({
+    queryKey: ['appStorePreview'],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      return actor.getCallerUserRole();
+      return actor.getAppStorePreview();
     },
-    enabled: !!actor && !actorFetching && !!identity,
+    enabled: !!actor && !actorFetching,
+    retry: 2,
+    staleTime: 60000,
   });
 }
 
@@ -149,6 +148,7 @@ export function useGetSubjects() {
       return actor.getSubjects();
     },
     enabled: !!actor && !actorFetching,
+    staleTime: Infinity,
   });
 }
 
@@ -183,21 +183,18 @@ export function useCreateCustomLesson() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: { title: string; subject: Subject; gradeLevel: bigint; content: string }) => {
+    mutationFn: async ({ title, subject, gradeLevel, content }: { title: string; subject: Subject; gradeLevel: bigint; content: string }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.createCustomLesson(params.title, params.subject, params.gradeLevel, params.content);
+      return actor.createCustomLesson(title, subject, gradeLevel, content);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lessonPlans'] });
-      toast.success('Lesson plan created successfully');
+      toast.success('Lesson created successfully');
     },
-    onError: (error: Error) => {
-      const { isAuthorizationError, message } = classifyAuthorizationError(error);
-      if (isAuthorizationError) {
-        toast.error(message);
-      } else {
-        toast.error(`Failed to create lesson: ${message}`);
-      }
+    onError: (error: unknown) => {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      const message = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(message));
     },
   });
 }
@@ -213,15 +210,12 @@ export function useCreateLessonFromLibrary() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lessonPlans'] });
-      toast.success('Lesson added from library successfully');
+      toast.success('Lesson added from library');
     },
-    onError: (error: Error) => {
-      const { isAuthorizationError, message } = classifyAuthorizationError(error);
-      if (isAuthorizationError) {
-        toast.error(message);
-      } else {
-        toast.error(`Failed to add lesson from library: ${message}`);
-      }
+    onError: (error: unknown) => {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      const message = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(message));
     },
   });
 }
@@ -230,56 +224,14 @@ export function useGenerateAiLessonPlanDraft() {
   const { actor } = useActor();
 
   return useMutation({
-    mutationFn: async (request: LessonPlanRequest): Promise<LessonPlanDraft> => {
+    mutationFn: async (request: LessonPlanRequest) => {
       if (!actor) throw new Error('Actor not available');
       return actor.generateAiLessonPlanDraft(request);
     },
-    onSuccess: () => {
-      toast.success('AI lesson plan draft generated successfully');
-    },
-    onError: (error: Error) => {
-      const { isAuthorizationError, message } = classifyAuthorizationError(error);
-      if (isAuthorizationError) {
-        toast.error(message);
-      } else {
-        toast.error(`Failed to generate lesson plan: ${message}`);
-      }
-    },
-  });
-}
-
-export function useAssignLessonToStudent() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (params: {
-      assignmentTitle: string;
-      lessonId: bigint;
-      description: string;
-      dueDate: bigint;
-      studentId: Principal;
-    }) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.assignLessonToStudent(
-        params.assignmentTitle,
-        params.lessonId,
-        params.description,
-        params.dueDate,
-        params.studentId
-      );
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['assignments'] });
-      toast.success('Lesson assigned successfully');
-    },
-    onError: (error: Error) => {
-      const { isAuthorizationError, message } = classifyAuthorizationError(error);
-      if (isAuthorizationError) {
-        toast.error(message);
-      } else {
-        toast.error(`Failed to assign lesson: ${message}`);
-      }
+    onError: (error: unknown) => {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      const message = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(message));
     },
   });
 }
@@ -288,12 +240,34 @@ export function useGetStudentAssignments(studentId: Principal | null) {
   const { actor, isFetching: actorFetching } = useActor();
 
   return useQuery<Assignment[]>({
-    queryKey: ['assignments', studentId?.toString()],
+    queryKey: ['studentAssignments', studentId?.toString()],
     queryFn: async () => {
-      if (!actor || !studentId) return [];
+      if (!actor) throw new Error('Actor not available');
+      if (!studentId) throw new Error('Student ID not available');
       return actor.getStudentAssignments(studentId);
     },
     enabled: !!actor && !actorFetching && !!studentId,
+  });
+}
+
+export function useAssignLessonToStudent() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ assignmentTitle, lessonId, description, dueDate, studentId }: { assignmentTitle: string; lessonId: bigint; description: string; dueDate: bigint; studentId: Principal }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.assignLessonToStudent(assignmentTitle, lessonId, description, dueDate, studentId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['studentAssignments'] });
+      toast.success('Assignment created successfully');
+    },
+    onError: (error: unknown) => {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      const message = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(message));
+    },
   });
 }
 
@@ -302,16 +276,18 @@ export function useSubmitAssignment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: { assignmentId: bigint; submission: string }) => {
+    mutationFn: async ({ assignmentId, submission }: { assignmentId: bigint; submission: string }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.submitAssignment(params.assignmentId, params.submission);
+      return actor.submitAssignment(assignmentId, submission);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['assignments'] });
+      queryClient.invalidateQueries({ queryKey: ['studentAssignments'] });
       toast.success('Assignment submitted successfully');
     },
-    onError: (error: Error) => {
-      toast.error(`Failed to submit assignment: ${error.message}`);
+    onError: (error: unknown) => {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      const message = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(message));
     },
   });
 }
@@ -321,41 +297,142 @@ export function useGradeAssignment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: { assignmentId: bigint; grade: bigint }) => {
+    mutationFn: async ({ assignmentId, grade }: { assignmentId: bigint; grade: bigint }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.gradeAssignment(params.assignmentId, params.grade);
+      return actor.gradeAssignment(assignmentId, grade);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['assignments'] });
-      queryClient.invalidateQueries({ queryKey: ['gradeAverages'] });
+      queryClient.invalidateQueries({ queryKey: ['studentAssignments'] });
       queryClient.invalidateQueries({ queryKey: ['reportCards'] });
       toast.success('Assignment graded successfully');
     },
-    onError: (error: Error) => {
-      const { isAuthorizationError, message } = classifyAuthorizationError(error);
-      if (isAuthorizationError) {
-        toast.error(message);
-      } else {
-        toast.error(`Failed to grade assignment: ${message}`);
-      }
+    onError: (error: unknown) => {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      const message = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(message));
     },
   });
 }
 
-export function useGetGradeAveragesBySubject(studentId: Principal | null, subjectId: bigint | null) {
+export function useGetPremiumAccessStatus(user: Principal | null) {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<boolean>({
+    queryKey: ['premiumAccess', user?.toString()],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      if (!user) throw new Error('User principal not available');
+      return actor.getPremiumAccessStatus(user);
+    },
+    enabled: !!actor && !actorFetching && !!user,
+  });
+}
+
+export function useIsSubscriptionCancelled(user: Principal | null) {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<boolean>({
+    queryKey: ['subscriptionCancelled', user?.toString()],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      if (!user) throw new Error('User principal not available');
+      return actor.isSubscriptionCancelled(user);
+    },
+    enabled: !!actor && !actorFetching && !!user,
+  });
+}
+
+export function useGetGradeAveragesBySubject(studentId: Principal | null, subjectId: bigint) {
   const { actor, isFetching: actorFetching } = useActor();
 
   return useQuery<bigint>({
-    queryKey: ['gradeAverages', studentId?.toString(), subjectId?.toString()],
+    queryKey: ['gradeAverages', studentId?.toString(), subjectId.toString()],
     queryFn: async () => {
-      if (!actor || !studentId || subjectId === null) return BigInt(0);
+      if (!actor) throw new Error('Actor not available');
+      if (!studentId) throw new Error('Student ID not available');
       return actor.getGradeAveragesBySubject(studentId, subjectId);
     },
-    enabled: !!actor && !actorFetching && !!studentId && subjectId !== null,
+    enabled: !!actor && !actorFetching && !!studentId,
   });
 }
 
-// Premium subscription hooks
+export function useCreateCheckoutSession() {
+  const { actor } = useActor();
+
+  return useMutation({
+    mutationFn: async ({ items, successUrl, cancelUrl }: { items: ShoppingItem[]; successUrl: string; cancelUrl: string }) => {
+      if (!actor) throw new Error('Actor not available');
+      const result = await actor.createCheckoutSession(items, successUrl, cancelUrl);
+      const session = JSON.parse(result) as { id: string; url: string };
+      if (!session?.url) {
+        throw new Error('Stripe session missing url');
+      }
+      return session;
+    },
+    onError: (error: unknown) => {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      const message = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(message));
+    },
+  });
+}
+
+export function useCancelPremiumSubscription() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.cancelPremiumSubscription();
+    },
+    onSuccess: (message) => {
+      queryClient.invalidateQueries({ queryKey: ['subscriptionCancelled'] });
+      toast.success(message);
+    },
+    onError: (error: unknown) => {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      const message = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(message));
+    },
+  });
+}
+
+export function useGenerateReportCard() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (studentId: Principal) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.generateReportCard(studentId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reportCards'] });
+      toast.success('Report card generated successfully');
+    },
+    onError: (error: unknown) => {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      const message = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(message));
+    },
+  });
+}
+
+export function useGetStudentReportCards(studentId: Principal | null) {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<ReportCard[]>({
+    queryKey: ['reportCards', studentId?.toString()],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      if (!studentId) throw new Error('Student ID not available');
+      return actor.getStudentReportCards(studentId);
+    },
+    enabled: !!actor && !actorFetching && !!studentId,
+  });
+}
+
 export function useIsStripeConfigured() {
   const { actor, isFetching: actorFetching } = useActor();
 
@@ -380,146 +457,12 @@ export function useSetStripeConfiguration() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['stripeConfigured'] });
-      toast.success('Stripe configured successfully');
+      toast.success('Stripe configuration saved');
     },
-    onError: (error: Error) => {
-      const { isAuthorizationError, message } = classifyAuthorizationError(error);
-      if (isAuthorizationError) {
-        toast.error(message);
-      } else {
-        toast.error(`Failed to configure Stripe: ${message}`);
-      }
-    },
-  });
-}
-
-export function useGetPremiumAccessStatus(user: Principal | null) {
-  const { actor, isFetching: actorFetching } = useActor();
-
-  return useQuery<boolean>({
-    queryKey: ['premiumAccess', user?.toString()],
-    queryFn: async () => {
-      if (!actor || !user) return false;
-      return actor.getPremiumAccessStatus(user);
-    },
-    enabled: !!actor && !actorFetching && !!user,
-  });
-}
-
-export function useIsSubscriptionCancelled(user: Principal | null) {
-  const { actor, isFetching: actorFetching } = useActor();
-
-  return useQuery<boolean>({
-    queryKey: ['subscriptionCancelled', user?.toString()],
-    queryFn: async () => {
-      if (!actor || !user) return false;
-      return actor.isSubscriptionCancelled(user);
-    },
-    enabled: !!actor && !actorFetching && !!user,
-  });
-}
-
-export function useCancelPremiumSubscription() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.cancelPremiumSubscription();
-    },
-    onSuccess: (message) => {
-      queryClient.invalidateQueries({ queryKey: ['subscriptionCancelled'] });
-      queryClient.invalidateQueries({ queryKey: ['premiumAccess'] });
-      toast.success('Subscription cancelled successfully');
-      return message;
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to cancel subscription: ${error.message}`);
-    },
-  });
-}
-
-export function useCreateCheckoutSession() {
-  const { actor } = useActor();
-
-  return useMutation({
-    mutationFn: async (params: { items: ShoppingItem[]; successUrl: string; cancelUrl: string }) => {
-      if (!actor) throw new Error('Actor not available');
-      const result = await actor.createCheckoutSession(params.items, params.successUrl, params.cancelUrl);
-      return JSON.parse(result) as { id: string; url: string };
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to create checkout session: ${error.message}`);
-    },
-  });
-}
-
-export function useGenerateReportCard() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (studentId: Principal) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.generateReportCard(studentId);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reportCards'] });
-      toast.success('Report card generated successfully');
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to generate report card: ${error.message}`);
-    },
-  });
-}
-
-export function useGetStudentReportCards(studentId: Principal | null) {
-  const { actor, isFetching: actorFetching } = useActor();
-
-  return useQuery<ReportCard[]>({
-    queryKey: ['reportCards', studentId?.toString()],
-    queryFn: async () => {
-      if (!actor || !studentId) return [];
-      return actor.getStudentReportCards(studentId);
-    },
-    enabled: !!actor && !actorFetching && !!studentId,
-  });
-}
-
-export function useGetAppStorePreview() {
-  const { actor, isFetching: actorFetching } = useActor();
-
-  return useQuery<AppStorePreview>({
-    queryKey: ['appStorePreview'],
-    queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.getAppStorePreview();
-    },
-    enabled: !!actor && !actorFetching,
-  });
-}
-
-export function useGrantPremiumAccess() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (user: Principal) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.grantPremiumAccess(user);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['premiumAccess'] });
-      toast.success('Premium access granted successfully');
-    },
-    onError: (error: Error) => {
-      const { isAuthorizationError, message } = classifyAuthorizationError(error);
-      if (isAuthorizationError) {
-        toast.error(message);
-      } else {
-        toast.error(`Failed to grant premium access: ${message}`);
-      }
+    onError: (error: unknown) => {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      const message = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(message));
     },
   });
 }

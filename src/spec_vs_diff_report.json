@@ -1,56 +1,68 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T01:31:12.018Z",
-  "summary": "Diff implements a new frontend authorization error classifier and applies it at least to publish/unpublish mutations, plus various frontend UX/refactors (role prop rename to isEducatorParent, loading guards in App, and claimed stricter role-gating in LessonPlans/Assignments). Backend authorization trap text was changed for publish/unpublish but still uses “Admin role required” and does not demonstrate the requested Educators/Parents-aligned, consistent authorization phrasing across all admin-only endpoints.",
+  "generatedAt": "2026-02-12T01:48:22.662Z",
+  "summary": "Diff implements several stability/loading improvements: new QueryErrorState and ActorNotReadyState components, normalized user-facing error messages, improved '/' and LandingPage startup error handling with retry, and a more robust service worker strategy plus an update prompt. One key requirement (global error boundary applied to the whole app) is not fully evidenced as wired globally. Several unrelated UI/product changes appear in the diff summary and are not requested by this BuildRequest.",
   "missing_requirements": [
     {
-      "id": "REQ-30",
-      "requirement": "Fine-tune backend authorization trap messages for access-controlled endpoints so they are consistent, role-accurate (Educators/Parents for admin-only actions), and easy for the frontend to classify as authorization failures.",
-      "reason": "The shown backend traps use the phrase \"Unauthorized: Admin role required\" rather than explicitly referencing the intended allowed role label (Educators/Parents). Also, the diff excerpt only shows publish/unpublish; it does not provide evidence that all other access-controlled endpoints were updated to the same consistent phrasing.",
+      "id": "REQ-31",
+      "requirement": "Add a global React error boundary that catches unexpected runtime/render errors anywhere in the app and shows a dedicated recovery screen instead of a blank/partially broken UI.",
+      "reason": "A GlobalErrorBoundary component was added, but the diff summary does not clearly show it being mounted at the top-level (wrapping the router/app) to ensure it catches errors \"anywhere in the app\". App.tsx shows the root route component is Layout, and the provided truncated snippet shows the Layout return without any error boundary wrapper.",
       "evidence": [
-        "backend/main.mo"
+        "frontend/src/components/GlobalErrorBoundary.tsx",
+        "frontend/src/App.tsx"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Global UI/typography styling overhaul (OKLCH color system, base font size changes, scrolling utilities).",
-      "reason": "Not requested by REQ-28/29/30, which focus on RBAC UX and authorization messaging.",
+      "description": "Role-based gating and UX changes across Dashboard and multiple tabs (e.g., gating lesson plan creation controls, passing isEducatorParent, changing welcome copy).",
+      "reason": "Not requested by REQ-31..REQ-34 (non-goals include new product features unrelated to stability/loading).",
       "evidence": [
-        "frontend-file-summaries.txt (frontend/src/index.css)"
-      ]
-    },
-    {
-      "description": "Onboarding guide content/UX refinements beyond role-wording constraints (multi-step onboarding dialog changes, spacing/responsive design).",
-      "reason": "REQ-28 only calls out avoiding “teacher” wording when the intended role is Educator/Parent; broader onboarding UX revisions are not requested.",
-      "evidence": [
-        "frontend/src/components/OnboardingGuide.tsx",
-        "frontend-file-summaries.txt (frontend/src/components/OnboardingGuide.tsx)"
-      ]
-    },
-    {
-      "description": "Progress tab layout/visual hierarchy adjustments.",
-      "reason": "Not requested by REQ-28/29/30.",
-      "evidence": [
+        "frontend-file-summaries.txt",
+        "frontend/src/components/LessonPlansTab.tsx",
+        "frontend/src/pages/Dashboard.tsx",
+        "frontend/src/components/AssignmentsTab.tsx",
         "frontend/src/components/ProgressTab.tsx",
-        "frontend-file-summaries.txt (frontend/src/components/ProgressTab.tsx)"
+        "frontend/src/components/ReportCardsTab.tsx"
+      ]
+    },
+    {
+      "description": "Global style changes such as reduced base font size, smooth scrolling, momentum scrolling, and new utility classes.",
+      "reason": "Not requested by REQ-31..REQ-34; unrelated to stability/loading/service worker caching/actor-init error surfacing per the BuildRequest.",
+      "evidence": [
+        "frontend-file-summaries.txt",
+        "frontend/src/index.css"
+      ]
+    },
+    {
+      "description": "Stripe/payment-related UI pages and components (PaymentSuccess/PaymentCancel, StripeSetup) and premium subscription UX changes.",
+      "reason": "Not requested by REQ-31..REQ-34 and appears unrelated to the stated stability/loading/service worker scope.",
+      "evidence": [
+        "frontend-file-summaries.txt",
+        "frontend/src/pages/PaymentSuccess.tsx",
+        "frontend/src/pages/PaymentCancel.tsx",
+        "frontend/src/components/StripeSetup.tsx",
+        "frontend/src/components/ReportCardsTab.tsx"
       ]
     }
   ],
-  "confidence": 0.62,
+  "confidence": 0.63,
   "changed_files": [
-    "backend/main.mo",
     "frontend-file-summaries.txt",
+    "frontend/public/service-worker.js",
     "frontend/src/App.tsx",
-    "frontend/src/components/AssignmentsTab.tsx",
-    "frontend/src/components/LessonPlansTab.tsx",
-    "frontend/src/components/OnboardingGuide.tsx",
+    "frontend/src/components/ActorNotReadyState.tsx",
+    "frontend/src/components/GlobalErrorBoundary.tsx",
     "frontend/src/components/ProgressTab.tsx",
+    "frontend/src/components/QueryErrorState.tsx",
     "frontend/src/components/ReportCardsTab.tsx",
+    "frontend/src/components/ServiceWorkerUpdatePrompt.tsx",
+    "frontend/src/hooks/usePWA.ts",
     "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/Dashboard.tsx",
-    "frontend/src/utils/authorizationErrors.ts",
+    "frontend/src/pages/LandingPage.tsx",
+    "frontend/src/utils/clearAppData.ts",
+    "frontend/src/utils/userFacingErrors.ts",
     "project_state.json"
   ]
 }

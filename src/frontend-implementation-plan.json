@@ -1,83 +1,130 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "RBAC UX gating + consistent authorization messaging (V26)",
+  "title": "Stability improvements: global error recovery, startup error states, and hardened PWA caching",
   "requirements": [
     {
-      "id": "REQ-28",
-      "summary": "Eliminate Student-visible flashes of Educator/Parent-only controls and remove “teacher” wording from role-related props/copy.",
+      "id": "REQ-31",
+      "summary": "Add a global React error boundary with a dedicated recovery screen, reload + clear-data actions, and consistent console logging.",
       "acceptanceCriteria": [
-        "When signed in as a Student (user role), the Lesson Plans UI does not show the “Create Lesson Plan” button and does not show the “AI Create” tab at any point (including during initial profile fetch/loading).",
-        "When signed in as an Educator/Parent (admin role), Lesson Plans creation controls (Custom, Upload, Library, AI Create) remain available as expected.",
-        "After logout/login switching between Student and Educator/Parent, the gated controls update correctly without requiring a hard refresh.",
-        "Dashboard prop naming and UI copy do not refer to “teacher” in user-facing labels when the intended role is Educator/Parent (admin)."
+        "If any component throws during render/effects, users see a friendly error screen with clear English text and no infinite loading state.",
+        "The error screen includes actions to: (1) reload the page and (2) clear local app data (at minimum: clear relevant localStorage/sessionStorage keys used by the app) and then reload.",
+        "The error boundary logs the underlying error to console with a consistent prefix so it is easy to diagnose from browser devtools."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Harden role-dependent caching by scoping current-user queries (e.g., currentUserProfile/currentUserRole/isCallerAdmin) to the active identity/principal in their React Query keys, and ensure they do not temporarily reuse prior-user data during identity/profile changes. Use the authorization component’s frontend guidance around clearing cached app data on logout; verify the component's usage instructions before implementing."
+          "path": "frontend/src/components/GlobalErrorBoundary.tsx",
+          "operation": "create",
+          "description": "Create a global React error boundary component that catches render/runtime errors, logs to console with a consistent prefix (e.g., \"[GlobalErrorBoundary]\") and renders a dedicated recovery screen with clear English messaging, a Reload action, and a Clear local app data + Reload action."
         },
         {
-          "path": "frontend/src/pages/Dashboard.tsx",
-          "operation": "modify",
-          "description": "Rename internal role booleans/props away from “teacher” (e.g., use isEducatorParent / isAdmin) and pass correctly named props to tabs. Ensure the welcome subtext and any other user-facing copy consistently refers to “Educators/Parents” (not “teachers”)."
-        },
-        {
-          "path": "frontend/src/components/LessonPlansTab.tsx",
-          "operation": "modify",
-          "description": "Rename LessonPlansTab prop from isTeacher to a role-accurate name (e.g., isEducatorParent) and ensure all educator-only controls (Create Lesson Plan button + AI Create tab + any creation dialog content) are strictly gated by that prop with no intermediate render states that could show them to Students."
-        },
-        {
-          "path": "frontend/src/components/AssignmentsTab.tsx",
-          "operation": "modify",
-          "description": "Rename isTeacher prop to a role-accurate name (Educator/Parent) and ensure educator-only actions (Assign Lesson, Grade Assignment) are gated consistently, including during any initial data-loading states."
-        },
-        {
-          "path": "frontend/src/components/OnboardingGuide.tsx",
-          "operation": "modify",
-          "description": "Update prop naming and user-facing onboarding copy so it reflects “Educator/Parent” vs “Student” roles (avoid “teacher” wording). Ensure onboarding steps shown are aligned with role-gated capabilities."
+          "path": "frontend/src/utils/clearAppData.ts",
+          "operation": "create",
+          "description": "Implement a small utility to clear relevant localStorage/sessionStorage keys used by the app (and optionally a safe full-clear fallback) to support recovery from corrupted client state. Ensure all user-facing strings are clear English."
         },
         {
           "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Confirm app-level loading guards prevent rendering role-gated screens until the authenticated user profile state is resolved for the current identity, and adjust if needed so role-gated controls cannot appear during initial fetch/loading or immediately after identity switches."
+          "description": "Wrap the routed application UI (Layout/RouterProvider render tree) with the new GlobalErrorBoundary so unexpected runtime/render errors anywhere in the app show the recovery screen instead of a blank or partially broken UI."
+        },
+        {
+          "path": "frontend/src/main.tsx",
+          "operation": "modify",
+          "description": "Ensure the GlobalErrorBoundary is applied at the highest practical level so initialization-time render errors are also caught (without altering immutable hooks)."
         }
       ]
     },
     {
-      "id": "REQ-29",
-      "summary": "Standardize authorization failure detection and user-facing messaging across all access-controlled actions and hooks.",
+      "id": "REQ-32",
+      "summary": "Replace indefinite spinners on initial loads (publication status and landing preview) with clear error states and retry actions while preserving existing success/loading UI.",
       "acceptanceCriteria": [
-        "If the backend rejects an action due to missing permissions, the UI shows a consistent, clear toast message in English (e.g., “This action is only available to Educators/Parents.”) rather than surfacing raw backend error text.",
-        "Non-authorization errors (e.g., network issues, validation errors) still show a useful failure message that includes the underlying error message.",
-        "Existing React Query hooks in frontend/src/hooks/useQueries.ts follow the same authorization-detection pattern for all relevant mutations and queries (no inconsistent wording like “teachers only” for Educator/Parent flows)."
+        "When useGetPublicationStatus fails, the index route displays a visible error message in English (not a raw stack trace) and includes a “Try again” action that refetches.",
+        "When useGetAppStorePreview fails on the Landing Page, the page shows a visible error message in English and includes a “Try again” action that refetches.",
+        "Loading states remain unchanged when requests are in-flight and succeeding (no regressions to current spinners)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/utils/authorizationErrors.ts",
+          "path": "frontend/src/components/QueryErrorState.tsx",
           "operation": "create",
-          "description": "Add a small shared helper to classify authorization failures from backend trap/error strings (e.g., detect “Unauthorized:” and other known role/permission phrases) and to produce standardized, role-accurate English UI messages (Educator/Parent vs Student) while preserving underlying error text for non-authorization failures. Use the authorization component’s error-handling guidance; verify the component's usage instructions before implementing."
+          "description": "Add a reusable inline error state component that displays a clear English failure message and a “Try again” button for retry/refetch flows (used by index startup and Landing Page preview failures). Use existing shadcn-ui primitives (e.g., Button, Alert/Card) for consistent styling. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Update IndexPage startup flow to handle publication status query failures explicitly (use isError/error and refetch from React Query) so it never falls into an indefinite spinner or silent failure; render QueryErrorState with a “Try again” action that refetches publication status."
+        },
+        {
+          "path": "frontend/src/pages/LandingPage.tsx",
+          "operation": "modify",
+          "description": "Update LandingPage to handle useGetAppStorePreview failures explicitly (use isError/error and refetch) rather than treating missing preview as perpetual loading; render QueryErrorState with a “Try again” action that refetches the preview while preserving the existing spinner for in-flight loading."
+        }
+      ]
+    },
+    {
+      "id": "REQ-33",
+      "summary": "Harden the PWA service worker caching and update flow to avoid stale/broken deployments while preserving offline navigation fallback.",
+      "acceptanceCriteria": [
+        "Service worker cache keys are versioned such that a new deployment reliably invalidates prior cached assets (static + dynamic).",
+        "Navigation requests (HTML shell) do not get stuck on a stale cached index.html after a new deployment; the app loads the latest version after a normal refresh.",
+        "If a new service worker is installed and waiting, the app provides a clear update path (either auto-activate safely or prompt the user in English to refresh to update).",
+        "Offline behavior remains functional: when offline, navigation still falls back to a cached page rather than failing with a network error."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/public/service-worker.js",
+          "operation": "modify",
+          "description": "Revise caching strategy to prevent stale/white-screen deployments: (1) ensure prior cached assets are reliably invalidated on new service worker activation (e.g., aggressive cleanup of prior static/dynamic caches and recache critical shell assets), (2) treat navigation requests with a network-first strategy that updates the cached HTML shell and falls back to cached content when offline, and (3) keep offline navigation functional via cached fallback."
+        },
+        {
+          "path": "frontend/src/hooks/usePWA.ts",
+          "operation": "modify",
+          "description": "Improve update detection state so the app can reliably know when a new service worker is installed/waiting (and/or when a refresh is needed). Keep user-facing strings in clear English and avoid exposing low-level technical details."
+        },
+        {
+          "path": "frontend/src/components/ServiceWorkerUpdatePrompt.tsx",
+          "operation": "create",
+          "description": "Add a small UI component that surfaces when an update is available (English prompt) and provides a clear action to update (e.g., Refresh to update). Use existing shadcn-ui primitives (Alert/Button) and postMessage to the waiting service worker to activate when appropriate. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Wire ServiceWorkerUpdatePrompt into the global layout so it is visible app-wide when isUpdateAvailable is true (no orphan UI)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-34",
+      "summary": "Standardize and surface actor/identity initialization failures with consistent English messaging and retry paths, without editing immutable hook files.",
+      "acceptanceCriteria": [
+        "If the backend actor is not available during key queries/mutations, the UI shows a clear English message indicating the connection is not ready and provides a retry option.",
+        "Error toasts and/or inline errors use consistent English phrasing and do not expose raw trap strings or low-level technical jargon.",
+        "No changes are made to immutable hook files; improvements are implemented via composition/wrappers in editable files."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/utils/userFacingErrors.ts",
+          "operation": "create",
+          "description": "Create a small error-normalization utility that converts common initialization/actor availability failures (e.g., \"Actor not available\") and low-level/trap-like messages into consistent, clear English user-facing text suitable for inline errors/toasts."
+        },
+        {
+          "path": "frontend/src/components/ActorNotReadyState.tsx",
+          "operation": "create",
+          "description": "Implement a dedicated inline state for actor/connection not ready that explains in clear English that the connection is still initializing and offers a Retry action (e.g., re-trigger relevant refetch/retry). Use existing shadcn-ui primitives. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "In IndexPage, explicitly detect actor/identity-related readiness problems via query errors (e.g., actor not available) and show ActorNotReadyState / QueryErrorState with consistent English messaging and retry, instead of silent failures."
+        },
+        {
+          "path": "frontend/src/pages/LandingPage.tsx",
+          "operation": "modify",
+          "description": "When landing preview fails due to actor/connection readiness, show ActorNotReadyState with a retry action; otherwise show QueryErrorState using normalized English error text."
         },
         {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Adopt the shared authorization error classifier for all relevant access-controlled mutations and queries (lesson creation, library add, AI draft generation, assignments actions, publishing/admin actions, premium/Stripe admin actions). Replace ad-hoc string checks and inconsistent wording (including any “teachers only”) with consistent messaging like “This action is only available to Educators/Parents.” For non-authorization failures, keep a helpful message that includes the original error message. Verify the authorization component’s usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/LessonPlansTab.tsx",
-          "operation": "modify",
-          "description": "Ensure any toasts or inline error handling triggered by lesson creation flows align with the standardized authorization messaging (no raw trap text, no “teachers only”)."
-        },
-        {
-          "path": "frontend/src/components/AssignmentsTab.tsx",
-          "operation": "modify",
-          "description": "Ensure assignment-related actions that can be rejected for permissions (assigning lessons, grading) show standardized authorization toasts instead of raw trap strings, while keeping non-authorization errors informative."
-        },
-        {
-          "path": "frontend/src/components/ReportCardsTab.tsx",
-          "operation": "modify",
-          "description": "Align premium-related actions that can be access-controlled (e.g., premium grant/cancel, configuration-related actions surfaced in UI) with standardized authorization error messaging rather than raw backend error text."
+          "description": "Update editable React Query hooks’ onError handlers (and any thrown actor-not-available cases) to use the new userFacingErrors normalization for consistent English messages and to avoid exposing raw trap strings/technical jargon; do not modify immutable hook files under the specified paths."
         }
       ]
     }

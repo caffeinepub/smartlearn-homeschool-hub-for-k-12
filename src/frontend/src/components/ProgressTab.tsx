@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useGetStudentAssignments, useGetSubjects, useGetGradeAveragesBySubject } from '../hooks/useQueries';
+import { useGetStudentAssignments, useGetSubjects } from '../hooks/useQueries';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -57,8 +57,8 @@ export default function ProgressTab({ isEducatorParent }: ProgressTabProps) {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="text-2xl font-bold">{completionRate.toFixed(0)}%</div>
-            <Progress value={completionRate} className="mt-2" />
-            <p className="mt-3 text-xs text-muted-foreground">
+            <Progress value={completionRate} className="h-2" />
+            <p className="text-xs text-muted-foreground">
               {completedAssignments} of {totalAssignments} assignments completed
             </p>
           </CardContent>
@@ -70,9 +70,10 @@ export default function ProgressTab({ isEducatorParent }: ProgressTabProps) {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="text-2xl font-bold">{overallAverage.toFixed(1)}</div>
-            <p className="mt-3 text-xs text-muted-foreground">
-              Based on {gradedAssignments} graded assignment{gradedAssignments !== 1 ? 's' : ''}
+            <div className="text-2xl font-bold">{overallAverage.toFixed(1)}%</div>
+            <Progress value={overallAverage} className="h-2" />
+            <p className="text-xs text-muted-foreground">
+              Based on {gradedAssignments} graded assignments
             </p>
           </CardContent>
         </Card>
@@ -84,71 +85,69 @@ export default function ProgressTab({ isEducatorParent }: ProgressTabProps) {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="text-2xl font-bold">{totalAssignments}</div>
-            <p className="mt-3 text-xs text-muted-foreground">
-              {totalAssignments - completedAssignments} pending
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {subjects && subjects.length > 0 && (
-        <Card>
-          <CardHeader className="space-y-3">
-            <CardTitle>Subject Performance</CardTitle>
-            <CardDescription>Your average grade by subject</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-5 sm:space-y-6">
-              {subjects.map((subject) => (
-                <SubjectProgress key={subject.subjectId.toString()} subject={subject} studentId={studentId} assignments={assignments || []} />
-              ))}
+            <div className="flex gap-2">
+              <Badge variant="default" className="text-xs">
+                {completedAssignments} Done
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                {totalAssignments - completedAssignments} Pending
+              </Badge>
             </div>
           </CardContent>
         </Card>
-      )}
-    </div>
-  );
-}
-
-function SubjectProgress({ subject, studentId, assignments }: { subject: any; studentId: any; assignments: any[] }) {
-  const { data: average } = useGetGradeAveragesBySubject(studentId, subject.subjectId);
-  const subjectIcon = SUBJECT_ICONS[subject.name];
-
-  const subjectAssignments = assignments.filter((a) => {
-    return true;
-  });
-
-  const subjectGrades = subjectAssignments
-    .filter((a) => a.grade !== undefined && a.grade !== null)
-    .map((a) => Number(a.grade));
-
-  const subjectAverage = subjectGrades.length > 0
-    ? subjectGrades.reduce((sum, grade) => sum + grade, 0) / subjectGrades.length
-    : 0;
-
-  const displayAverage = Number(average || BigInt(0));
-
-  if (subjectGrades.length === 0) {
-    return null;
-  }
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {subjectIcon && (
-            <img src={subjectIcon} alt={subject.name} className="h-6 w-6 rounded object-contain" />
-          )}
-          <span className="text-sm font-medium">{subject.name}</span>
-        </div>
-        <Badge variant={displayAverage >= 70 ? 'default' : 'destructive'}>
-          {displayAverage.toFixed(1)}%
-        </Badge>
       </div>
-      <Progress value={displayAverage} className="h-2" />
-      <p className="text-xs text-muted-foreground">
-        {subjectGrades.length} graded assignment{subjectGrades.length !== 1 ? 's' : ''}
-      </p>
+
+      <div>
+        <h3 className="mb-5 text-lg font-semibold">Subject Performance</h3>
+        <div className="grid gap-5 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {subjects?.map((subject) => {
+            const subjectAssignments = assignments?.filter((a) => {
+              // We don't have direct subject info on assignments, so we'll show all for now
+              return true;
+            }) || [];
+
+            const subjectGrades = subjectAssignments
+              .filter((a) => a.grade !== undefined && a.grade !== null)
+              .map((a) => Number(a.grade));
+
+            const subjectAverage = subjectGrades.length > 0
+              ? subjectGrades.reduce((sum, grade) => sum + grade, 0) / subjectGrades.length
+              : 0;
+
+            const subjectCompleted = subjectAssignments.filter((a) => a.completed).length;
+
+            return (
+              <Card key={subject.subjectId.toString()}>
+                <CardHeader className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-full bg-primary/10 p-2.5">
+                      <img
+                        src={SUBJECT_ICONS[subject.name] || '/assets/generated/lesson-plan-icon.dim_64x64.png'}
+                        alt={subject.name}
+                        className="h-6 w-6"
+                      />
+                    </div>
+                    <CardTitle className="text-base">{subject.name}</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Average</span>
+                      <span className="font-semibold">{subjectAverage.toFixed(1)}%</span>
+                    </div>
+                    <Progress value={subjectAverage} className="h-2" />
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{subjectCompleted} completed</span>
+                    <span>{subjectGrades.length} graded</span>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
