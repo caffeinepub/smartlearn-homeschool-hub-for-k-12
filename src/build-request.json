@@ -1,91 +1,35 @@
 {
   "kind": "build_request",
-  "title": "Fix production web app not working properly (stability + loading + service worker caching)",
+  "title": "Publish Version 30 by setting app publication status to published",
   "priority": "high",
   "requirements": [
     {
-      "id": "REQ-31",
-      "text": "Add a global React error boundary that catches unexpected runtime/render errors anywhere in the app and shows a dedicated recovery screen instead of a blank/partially broken UI.",
-      "target": "frontend",
+      "id": "REQ-39",
+      "text": "Publish the currently deployed Version 30 build by setting the backend publication status to \"published\" using the existing admin-only publish mechanism (backend method: publishApp), so regular users can access the Landing Page / Profile Setup / Dashboard instead of the takedown screen.",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-5"
+          "msg-4"
         ],
         "quotes": [
-          "app / web page not working properly"
+          "yes publish"
         ]
       },
       "acceptanceCriteria": [
-        "If any component throws during render/effects, users see a friendly error screen with clear English text and no infinite loading state.",
-        "The error screen includes actions to: (1) reload the page and (2) clear local app data (at minimum: clear relevant localStorage/sessionStorage keys used by the app) and then reload.",
-        "The error boundary logs the underlying error to console with a consistent prefix so it is easy to diagnose from browser devtools."
-      ]
-    },
-    {
-      "id": "REQ-32",
-      "text": "Improve the '/' startup flow so that failed initial data loads (e.g., publication status or app store preview) do not result in an indefinite spinner; instead show a clear, actionable error state and a retry action.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-5"
-        ],
-        "quotes": [
-          "app / web page not working properly"
-        ]
-      },
-      "acceptanceCriteria": [
-        "When useGetPublicationStatus fails, the index route displays a visible error message in English (not a raw stack trace) and includes a “Try again” action that refetches.",
-        "When useGetAppStorePreview fails on the Landing Page, the page shows a visible error message in English and includes a “Try again” action that refetches.",
-        "Loading states remain unchanged when requests are in-flight and succeeding (no regressions to current spinners)."
-      ]
-    },
-    {
-      "id": "REQ-33",
-      "text": "Harden the PWA service worker caching strategy to prevent broken/stale deployments (white screen, old JS/CSS served) after Version 27 production updates.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-5"
-        ],
-        "quotes": [
-          "app / web page not working properly"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Service worker cache keys are versioned such that a new deployment reliably invalidates prior cached assets (static + dynamic).",
-        "Navigation requests (HTML shell) do not get stuck on a stale cached index.html after a new deployment; the app loads the latest version after a normal refresh.",
-        "If a new service worker is installed and waiting, the app provides a clear update path (either auto-activate safely or prompt the user in English to refresh to update).",
-        "Offline behavior remains functional: when offline, navigation still falls back to a cached page rather than failing with a network error."
-      ]
-    },
-    {
-      "id": "REQ-34",
-      "text": "Standardize and surface initialization failures related to actor/identity availability so users understand why the app is not working (instead of silent failures).",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-5"
-        ],
-        "quotes": [
-          "app / web page not working properly"
-        ]
-      },
-      "acceptanceCriteria": [
-        "If the backend actor is not available during key queries/mutations, the UI shows a clear English message indicating the connection is not ready and provides a retry option.",
-        "Error toasts and/or inline errors use consistent English phrasing and do not expose raw trap strings or low-level technical jargon.",
-        "No changes are made to immutable hook files; improvements are implemented via composition/wrappers in editable files."
+        "When an admin triggers the existing publish action, the backend publication status becomes \"published\" (PublicationStatus.#published).",
+        "Visiting '/' as an unauthenticated user shows the Landing Page (not the Takedown screen).",
+        "Visiting '/' as an authenticated user reaches Profile Setup (if no profile exists) or Dashboard (if a profile exists), without being blocked by unpublished/maintenance gating.",
+        "Non-admin users cannot publish (attempts are rejected with an English authorization error and the UI does not expose admin publication controls to non-admins)."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under frontend/src/hooks/useInternetIdentity.ts or frontend/src/hooks/useActor.ts (immutable paths); implement fixes via composition in other frontend files.",
-    "Keep the backend architecture as a single Motoko actor in backend/main.mo; introduce backend changes only if needed to fix the reported malfunction.",
-    "All user-facing text introduced/modified by this work must be in clear English."
+    "Respect the existing single-actor Motoko backend architecture; do not introduce additional canisters/services.",
+    "Do not edit files under frontend/src/components/ui or any other frontend immutable paths listed in SYSTEM_CONTEXT; compose existing UI components instead."
   ],
   "nonGoals": [
-    "Adding new product features unrelated to stability/loading (e.g., new lesson plan capabilities, new premium features).",
-    "Introducing third-party monitoring/analytics services or external logging backends.",
-    "Changing authentication provider (Internet Identity remains the only auth mechanism)."
+    "Do not change any other app behavior or features beyond publishing (no additional UI/UX changes, pricing changes, or role-gating changes).",
+    "Do not add new authentication providers; continue using Internet Identity only."
   ],
   "imageRequirements": {
     "required": [],

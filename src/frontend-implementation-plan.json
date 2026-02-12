@@ -1,130 +1,37 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Stability improvements: global error recovery, startup error states, and hardened PWA caching",
+  "title": "Enable admin publish flow to remove takedown gating",
   "requirements": [
     {
-      "id": "REQ-31",
-      "summary": "Add a global React error boundary with a dedicated recovery screen, reload + clear-data actions, and consistent console logging.",
+      "id": "REQ-39",
+      "summary": "Ensure the existing admin-only publish action updates client publication gating so the app shows Landing/Profile Setup/Dashboard when published, while keeping publish controls hidden for non-admins and showing English authorization errors when rejected.",
       "acceptanceCriteria": [
-        "If any component throws during render/effects, users see a friendly error screen with clear English text and no infinite loading state.",
-        "The error screen includes actions to: (1) reload the page and (2) clear local app data (at minimum: clear relevant localStorage/sessionStorage keys used by the app) and then reload.",
-        "The error boundary logs the underlying error to console with a consistent prefix so it is easy to diagnose from browser devtools."
+        "When an admin triggers the existing publish action, the backend publication status becomes \"published\" (PublicationStatus.#published).",
+        "Visiting '/' as an unauthenticated user shows the Landing Page (not the Takedown screen).",
+        "Visiting '/' as an authenticated user reaches Profile Setup (if no profile exists) or Dashboard (if a profile exists), without being blocked by unpublished/maintenance gating.",
+        "Non-admin users cannot publish (attempts are rejected with an English authorization error and the UI does not expose admin publication controls to non-admins)."
       ],
       "file_operations": [
-        {
-          "path": "frontend/src/components/GlobalErrorBoundary.tsx",
-          "operation": "create",
-          "description": "Create a global React error boundary component that catches render/runtime errors, logs to console with a consistent prefix (e.g., \"[GlobalErrorBoundary]\") and renders a dedicated recovery screen with clear English messaging, a Reload action, and a Clear local app data + Reload action."
-        },
-        {
-          "path": "frontend/src/utils/clearAppData.ts",
-          "operation": "create",
-          "description": "Implement a small utility to clear relevant localStorage/sessionStorage keys used by the app (and optionally a safe full-clear fallback) to support recovery from corrupted client state. Ensure all user-facing strings are clear English."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Wrap the routed application UI (Layout/RouterProvider render tree) with the new GlobalErrorBoundary so unexpected runtime/render errors anywhere in the app show the recovery screen instead of a blank or partially broken UI."
-        },
-        {
-          "path": "frontend/src/main.tsx",
-          "operation": "modify",
-          "description": "Ensure the GlobalErrorBoundary is applied at the highest practical level so initialization-time render errors are also caught (without altering immutable hooks)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-32",
-      "summary": "Replace indefinite spinners on initial loads (publication status and landing preview) with clear error states and retry actions while preserving existing success/loading UI.",
-      "acceptanceCriteria": [
-        "When useGetPublicationStatus fails, the index route displays a visible error message in English (not a raw stack trace) and includes a “Try again” action that refetches.",
-        "When useGetAppStorePreview fails on the Landing Page, the page shows a visible error message in English and includes a “Try again” action that refetches.",
-        "Loading states remain unchanged when requests are in-flight and succeeding (no regressions to current spinners)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/QueryErrorState.tsx",
-          "operation": "create",
-          "description": "Add a reusable inline error state component that displays a clear English failure message and a “Try again” button for retry/refetch flows (used by index startup and Landing Page preview failures). Use existing shadcn-ui primitives (e.g., Button, Alert/Card) for consistent styling. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Update IndexPage startup flow to handle publication status query failures explicitly (use isError/error and refetch from React Query) so it never falls into an indefinite spinner or silent failure; render QueryErrorState with a “Try again” action that refetches publication status."
-        },
-        {
-          "path": "frontend/src/pages/LandingPage.tsx",
-          "operation": "modify",
-          "description": "Update LandingPage to handle useGetAppStorePreview failures explicitly (use isError/error and refetch) rather than treating missing preview as perpetual loading; render QueryErrorState with a “Try again” action that refetches the preview while preserving the existing spinner for in-flight loading."
-        }
-      ]
-    },
-    {
-      "id": "REQ-33",
-      "summary": "Harden the PWA service worker caching and update flow to avoid stale/broken deployments while preserving offline navigation fallback.",
-      "acceptanceCriteria": [
-        "Service worker cache keys are versioned such that a new deployment reliably invalidates prior cached assets (static + dynamic).",
-        "Navigation requests (HTML shell) do not get stuck on a stale cached index.html after a new deployment; the app loads the latest version after a normal refresh.",
-        "If a new service worker is installed and waiting, the app provides a clear update path (either auto-activate safely or prompt the user in English to refresh to update).",
-        "Offline behavior remains functional: when offline, navigation still falls back to a cached page rather than failing with a network error."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/public/service-worker.js",
-          "operation": "modify",
-          "description": "Revise caching strategy to prevent stale/white-screen deployments: (1) ensure prior cached assets are reliably invalidated on new service worker activation (e.g., aggressive cleanup of prior static/dynamic caches and recache critical shell assets), (2) treat navigation requests with a network-first strategy that updates the cached HTML shell and falls back to cached content when offline, and (3) keep offline navigation functional via cached fallback."
-        },
-        {
-          "path": "frontend/src/hooks/usePWA.ts",
-          "operation": "modify",
-          "description": "Improve update detection state so the app can reliably know when a new service worker is installed/waiting (and/or when a refresh is needed). Keep user-facing strings in clear English and avoid exposing low-level technical details."
-        },
-        {
-          "path": "frontend/src/components/ServiceWorkerUpdatePrompt.tsx",
-          "operation": "create",
-          "description": "Add a small UI component that surfaces when an update is available (English prompt) and provides a clear action to update (e.g., Refresh to update). Use existing shadcn-ui primitives (Alert/Button) and postMessage to the waiting service worker to activate when appropriate. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Wire ServiceWorkerUpdatePrompt into the global layout so it is visible app-wide when isUpdateAvailable is true (no orphan UI)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-34",
-      "summary": "Standardize and surface actor/identity initialization failures with consistent English messaging and retry paths, without editing immutable hook files.",
-      "acceptanceCriteria": [
-        "If the backend actor is not available during key queries/mutations, the UI shows a clear English message indicating the connection is not ready and provides a retry option.",
-        "Error toasts and/or inline errors use consistent English phrasing and do not expose raw trap strings or low-level technical jargon.",
-        "No changes are made to immutable hook files; improvements are implemented via composition/wrappers in editable files."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/utils/userFacingErrors.ts",
-          "operation": "create",
-          "description": "Create a small error-normalization utility that converts common initialization/actor availability failures (e.g., \"Actor not available\") and low-level/trap-like messages into consistent, clear English user-facing text suitable for inline errors/toasts."
-        },
-        {
-          "path": "frontend/src/components/ActorNotReadyState.tsx",
-          "operation": "create",
-          "description": "Implement a dedicated inline state for actor/connection not ready that explains in clear English that the connection is still initializing and offers a Retry action (e.g., re-trigger relevant refetch/retry). Use existing shadcn-ui primitives. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "In IndexPage, explicitly detect actor/identity-related readiness problems via query errors (e.g., actor not available) and show ActorNotReadyState / QueryErrorState with consistent English messaging and retry, instead of silent failures."
-        },
-        {
-          "path": "frontend/src/pages/LandingPage.tsx",
-          "operation": "modify",
-          "description": "When landing preview fails due to actor/connection readiness, show ActorNotReadyState with a retry action; otherwise show QueryErrorState using normalized English error text."
-        },
         {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Update editable React Query hooks’ onError handlers (and any thrown actor-not-available cases) to use the new userFacingErrors normalization for consistent English messages and to avoid exposing raw trap strings/technical jargon; do not modify immutable hook files under the specified paths."
+          "description": "Harden the existing publish/unpublish React Query mutations so they reliably refresh the cached publication status used by route gating (invalidate + refetch remains), and ensure authorization failures produce a correct English toast message by passing the classified authorization message text (not an object) into the user-facing error normalizer. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/utils/authorizationErrors.ts",
+          "operation": "modify",
+          "description": "Update authorization error classification to explicitly recognize admin-only publish/unpublish rejections (e.g., messages containing \"only admins\" / \"admin\" / \"Unauthorized\") and return a clear English message appropriate for non-admin publish attempts (admin-only). Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/AdminPublicationControls.tsx",
+          "operation": "modify",
+          "description": "Keep the publication controls admin-only (continue to render nothing for non-admins), and ensure the publish action uses the existing publish mechanism hook while relying on shared error handling (toast) rather than only console logging, so non-admin attempts (if any) surface an English authorization error. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Confirm the index route publication gating cleanly switches between Takedown and normal app flows based on PublicationStatus (published vs unpublished) and responds immediately after publication status refetch (post-publish) without requiring a manual reload. Verify the component's usage instructions before implementing."
         }
       ]
     }

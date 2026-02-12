@@ -45,18 +45,27 @@ actor {
     publicationStatus := #unpublished { reason };
   };
 
-  public query func getPublicationStatus() : async PublicationStatus {
+  public query ({ caller }) func getPublicationStatus() : async PublicationStatus {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: User role required");
+    };
     publicationStatus;
   };
 
-  public query func isPublished() : async Bool {
+  public query ({ caller }) func isPublished() : async Bool {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: User role required");
+    };
     switch (publicationStatus) {
       case (#published _) { true };
       case (#unpublished _) { false };
     };
   };
 
-  public query func getUnpublishReason() : async ?Text {
+  public query ({ caller }) func getUnpublishReason() : async ?Text {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: User role required");
+    };
     switch (publicationStatus) {
       case (#published _) { null };
       case (#unpublished { reason }) { ?reason };

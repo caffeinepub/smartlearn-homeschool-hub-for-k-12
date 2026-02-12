@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useIsCallerAdmin, usePublishApp, useUnpublishApp, useGetPublicationStatus } from '../hooks/useQueries';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,20 +16,28 @@ export default function AdminPublicationControls() {
   const [unpublishReason, setUnpublishReason] = useState('');
   const [showUnpublishForm, setShowUnpublishForm] = useState(false);
 
+  const isPublished = publicationStatus?.__kind__ === 'published';
+
+  // Clear form state when publication status changes to published
+  useEffect(() => {
+    if (isPublished) {
+      setShowUnpublishForm(false);
+      setUnpublishReason('');
+    }
+  }, [isPublished]);
+
   // Don't render anything for non-admins
   if (adminCheckLoading || !isAdmin) {
     return null;
   }
 
-  const isPublished = publicationStatus?.__kind__ === 'published';
   const isLoading = publishApp.isPending || unpublishApp.isPending;
 
   const handlePublish = async () => {
     try {
       await publishApp.mutateAsync();
-      setShowUnpublishForm(false);
-      setUnpublishReason('');
     } catch (error) {
+      // Error is already handled by the mutation's onError with toast
       console.error('Failed to publish app:', error);
     }
   };
@@ -41,9 +49,8 @@ export default function AdminPublicationControls() {
     
     try {
       await unpublishApp.mutateAsync(unpublishReason);
-      setShowUnpublishForm(false);
-      setUnpublishReason('');
     } catch (error) {
+      // Error is already handled by the mutation's onError with toast
       console.error('Failed to unpublish app:', error);
     }
   };

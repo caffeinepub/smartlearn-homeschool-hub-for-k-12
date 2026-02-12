@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
-import { getSignInType, clearSignInType, hasExplicitSignInType } from '../utils/signInType';
+import { getSignInType, clearSignInType } from '../utils/signInType';
+import { toast } from 'sonner';
 
 export default function ProfileSetup() {
   const [name, setName] = useState('');
@@ -18,7 +19,7 @@ export default function ProfileSetup() {
   useEffect(() => {
     const signInType = getSignInType();
     if (signInType) {
-      // Default role based on sign-in type
+      // Default role based on sign-in type (including legacy values)
       const defaultRole = signInType === 'educator-parent' ? UserRole.admin : UserRole.user;
       setRole(defaultRole);
       setIsRoleLocked(true);
@@ -32,8 +33,16 @@ export default function ProfileSetup() {
         { name: name.trim(), role },
         {
           onSuccess: () => {
-            // Clear the stored sign-in type after successful profile creation
+            // Clear the stored sign-in type only after successful profile creation
             clearSignInType();
+            toast.success('Profile created successfully!');
+          },
+          onError: (error: any) => {
+            // Keep sign-in type stored so user can retry
+            const errorMessage = error?.message || 'Failed to create profile. Please try again.';
+            toast.error('Profile Setup Failed', {
+              description: errorMessage,
+            });
           },
         }
       );

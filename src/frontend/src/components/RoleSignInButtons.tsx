@@ -1,4 +1,5 @@
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
+import { useNavigate } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import { Loader2, GraduationCap, Users } from 'lucide-react';
 import { setSignInType, type SignInType } from '../utils/signInType';
@@ -8,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
 
 interface RoleSignInButtonsProps {
   variant?: 'default' | 'compact';
@@ -15,14 +17,43 @@ interface RoleSignInButtonsProps {
 }
 
 export default function RoleSignInButtons({ variant = 'default', className = '' }: RoleSignInButtonsProps) {
-  const { login, isLoggingIn } = useInternetIdentity();
+  const { login, isLoggingIn, identity } = useInternetIdentity();
+  const navigate = useNavigate();
 
   const handleSignIn = async (type: SignInType) => {
+    // If already authenticated, navigate to dashboard instead of trying to login again
+    if (identity) {
+      navigate({ to: '/' });
+      return;
+    }
+
+    // Store the sign-in type before login
     setSignInType(type);
+    
     try {
       await login();
     } catch (error: any) {
       console.error('Login error:', error);
+      
+      // Handle "already authenticated" error gracefully
+      if (error?.message?.includes('already authenticated')) {
+        toast.info('You are already logged in', {
+          description: 'Redirecting to dashboard...',
+        });
+        navigate({ to: '/' });
+        return;
+      }
+      
+      // Show user-friendly error message
+      const errorMessage = error?.message || 'Login failed. Please try again.';
+      toast.error('Login Failed', {
+        description: errorMessage,
+        action: {
+          label: 'Retry',
+          onClick: () => handleSignIn(type),
+        },
+      });
+      
       // Keep the sign-in type stored for retry
     }
   };

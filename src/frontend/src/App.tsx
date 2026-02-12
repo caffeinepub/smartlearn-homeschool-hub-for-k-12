@@ -4,6 +4,7 @@ import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/sonner';
 import { useInternetIdentity } from './hooks/useInternetIdentity';
 import { useGetCallerUserProfile, useGetPublicationStatus } from './hooks/useQueries';
+import { useActor } from './hooks/useActor';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Dashboard from './pages/Dashboard';
@@ -82,6 +83,7 @@ declare module '@tanstack/react-router' {
 
 function IndexPage() {
   const { identity, isInitializing } = useInternetIdentity();
+  const { actor, isFetching: actorFetching } = useActor();
   const { 
     data: publicationStatus, 
     isLoading: publicationLoading,
@@ -89,6 +91,7 @@ function IndexPage() {
     error: publicationErrorData,
     refetch: refetchPublication
   } = useGetPublicationStatus();
+  
   const { 
     data: userProfile, 
     isLoading: profileLoading, 
@@ -124,8 +127,11 @@ function IndexPage() {
     );
   }
 
-  // Check if app is unpublished
-  if (publicationStatus?.__kind__ === 'unpublished') {
+  // Check if app is unpublished - this check happens immediately after publication status is loaded
+  // The staleTime: 0 in useGetPublicationStatus ensures this reflects the latest state after publish/unpublish
+  const isPublished = publicationStatus?.__kind__ === 'published';
+  
+  if (!isPublished && publicationStatus?.__kind__ === 'unpublished') {
     return <Takedown reason={publicationStatus.unpublished.reason} />;
   }
 
@@ -134,8 +140,9 @@ function IndexPage() {
     return <LandingPage />;
   }
 
-  // Authenticated - wait for profile to be fetched
-  if (profileLoading || !profileFetched) {
+  // Authenticated - wait for actor and profile to be ready
+  // This prevents flash of profile setup when actor is still initializing
+  if (actorFetching || !actor || profileLoading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -143,8 +150,8 @@ function IndexPage() {
     );
   }
 
-  // Show profile setup if no profile exists
-  if (userProfile === null) {
+  // Show profile setup if no profile exists (only after actor is ready and profile is fetched)
+  if (profileFetched && userProfile === null) {
     return <ProfileSetup />;
   }
 

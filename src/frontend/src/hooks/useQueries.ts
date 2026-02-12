@@ -19,7 +19,7 @@ export function useGetPublicationStatus() {
     },
     enabled: !!actor && !actorFetching,
     retry: 3,
-    staleTime: 30000,
+    staleTime: 0,
   });
 }
 
@@ -47,14 +47,15 @@ export function usePublishApp() {
       if (!actor) throw new Error('Actor not available');
       return actor.publishApp();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['publicationStatus'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['publicationStatus'] });
+      await queryClient.refetchQueries({ queryKey: ['publicationStatus'] });
       toast.success('App published successfully');
     },
     onError: (error: unknown) => {
       const errorObj = error instanceof Error ? error : new Error(String(error));
-      const message = classifyAuthorizationError(errorObj);
-      toast.error(normalizeErrorMessage(message));
+      const authResult = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(authResult.message));
     },
   });
 }
@@ -68,14 +69,15 @@ export function useUnpublishApp() {
       if (!actor) throw new Error('Actor not available');
       return actor.unpublishApp(reason);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['publicationStatus'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['publicationStatus'] });
+      await queryClient.refetchQueries({ queryKey: ['publicationStatus'] });
       toast.success('App unpublished successfully');
     },
     onError: (error: unknown) => {
       const errorObj = error instanceof Error ? error : new Error(String(error));
-      const message = classifyAuthorizationError(errorObj);
-      toast.error(normalizeErrorMessage(message));
+      const authResult = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(authResult.message));
     },
   });
 }
@@ -117,8 +119,8 @@ export function useSaveCallerUserProfile() {
     },
     onError: (error: unknown) => {
       const errorObj = error instanceof Error ? error : new Error(String(error));
-      const message = classifyAuthorizationError(errorObj);
-      toast.error(normalizeErrorMessage(message));
+      const authResult = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(authResult.message));
     },
   });
 }
@@ -193,8 +195,8 @@ export function useCreateCustomLesson() {
     },
     onError: (error: unknown) => {
       const errorObj = error instanceof Error ? error : new Error(String(error));
-      const message = classifyAuthorizationError(errorObj);
-      toast.error(normalizeErrorMessage(message));
+      const authResult = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(authResult.message));
     },
   });
 }
@@ -214,8 +216,8 @@ export function useCreateLessonFromLibrary() {
     },
     onError: (error: unknown) => {
       const errorObj = error instanceof Error ? error : new Error(String(error));
-      const message = classifyAuthorizationError(errorObj);
-      toast.error(normalizeErrorMessage(message));
+      const authResult = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(authResult.message));
     },
   });
 }
@@ -230,8 +232,8 @@ export function useGenerateAiLessonPlanDraft() {
     },
     onError: (error: unknown) => {
       const errorObj = error instanceof Error ? error : new Error(String(error));
-      const message = classifyAuthorizationError(errorObj);
-      toast.error(normalizeErrorMessage(message));
+      const authResult = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(authResult.message));
     },
   });
 }
@@ -265,8 +267,8 @@ export function useAssignLessonToStudent() {
     },
     onError: (error: unknown) => {
       const errorObj = error instanceof Error ? error : new Error(String(error));
-      const message = classifyAuthorizationError(errorObj);
-      toast.error(normalizeErrorMessage(message));
+      const authResult = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(authResult.message));
     },
   });
 }
@@ -286,8 +288,8 @@ export function useSubmitAssignment() {
     },
     onError: (error: unknown) => {
       const errorObj = error instanceof Error ? error : new Error(String(error));
-      const message = classifyAuthorizationError(errorObj);
-      toast.error(normalizeErrorMessage(message));
+      const authResult = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(authResult.message));
     },
   });
 }
@@ -308,8 +310,8 @@ export function useGradeAssignment() {
     },
     onError: (error: unknown) => {
       const errorObj = error instanceof Error ? error : new Error(String(error));
-      const message = classifyAuthorizationError(errorObj);
-      toast.error(normalizeErrorMessage(message));
+      const authResult = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(authResult.message));
     },
   });
 }
@@ -371,8 +373,8 @@ export function useCreateCheckoutSession() {
     },
     onError: (error: unknown) => {
       const errorObj = error instanceof Error ? error : new Error(String(error));
-      const message = classifyAuthorizationError(errorObj);
-      toast.error(normalizeErrorMessage(message));
+      const authResult = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(authResult.message));
     },
   });
 }
@@ -392,8 +394,8 @@ export function useCancelPremiumSubscription() {
     },
     onError: (error: unknown) => {
       const errorObj = error instanceof Error ? error : new Error(String(error));
-      const message = classifyAuthorizationError(errorObj);
-      toast.error(normalizeErrorMessage(message));
+      const authResult = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(authResult.message));
     },
   });
 }
@@ -413,8 +415,8 @@ export function useGenerateReportCard() {
     },
     onError: (error: unknown) => {
       const errorObj = error instanceof Error ? error : new Error(String(error));
-      const message = classifyAuthorizationError(errorObj);
-      toast.error(normalizeErrorMessage(message));
+      const authResult = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(authResult.message));
     },
   });
 }
@@ -461,8 +463,8 @@ export function useSetStripeConfiguration() {
     },
     onError: (error: unknown) => {
       const errorObj = error instanceof Error ? error : new Error(String(error));
-      const message = classifyAuthorizationError(errorObj);
-      toast.error(normalizeErrorMessage(message));
+      const authResult = classifyAuthorizationError(errorObj);
+      toast.error(normalizeErrorMessage(authResult.message));
     },
   });
 }

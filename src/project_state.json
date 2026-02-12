@@ -1,17 +1,19 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 23,
+  "projectStateVersion": 29,
   "summary": "App requiring separate sign-in flows for educators/parents vs students",
   "architectural_notes": [
     "Deployment/publishing workflow: user requested to publish the app after applying the latest update (toggle backend maintenance mode from unpublished to published after build).",
     "Backend currently starts in unpublished mode; when unpublished, frontend shows dedicated Takedown screen.",
-    "Project renamed; update branding/UI copy to reflect new name “Homeschool Hub K-12” across web and app."
+    "Project renamed; update branding/UI copy to reflect new name “Homeschool Hub K-12” across web and app.",
+    "User requested publishing the app live after the Version 29 build/deploy (toggle backend maintenance/publication status to published after deployment).",
+    "User approved publishing the Version 30 build live (toggle backend publication status to published after deployment)."
   ],
   "known_issues": [
     "Access control behavior in Version 26 needs fine-tuning (user reported it still doesn’t feel right).",
     "App / web page not working properly (user report after Version 27 production deploy)."
   ],
-  "isFixRequest": true,
+  "isFixRequest": false,
   "existing_features": [
     {
       "id": "feature-add-a-role-specific-sign-in-choice-that-lets-users-start-authentication-explicitly-as-either-a-educator-parent-or-b-student-and-persist-that-pre-login-choice-through-the-internet-identity-login-flow-so-it-can-be-used-during-first-time-profile-setup",
@@ -220,6 +222,46 @@
         "REQ-34"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-verify-and-harden-the-student-login-path-started-via-the-role-based-sign-in-controls-so-that-a-user-can-reliably-sign-in-as-a-student-complete-first-time-profile-setup-and-reach-the-correct-student-dashboard-experience",
+      "title": "Verify and harden the Student login path started via the role-based sign-in controls so that a user can reliably sign in as a Student, complete first-time profile setup, and reach the correct Student dashboard experience.",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-prevent-the-student-sign-in-action-from-failing-when-a-user-is-already-authenticated-by-handling-the-already-authenticated-internet-identity-condition-in-a-user-friendly-way",
+      "title": "Prevent the Student sign-in action from failing when a user is already authenticated by handling the “already authenticated” Internet Identity condition in a user-friendly way.",
+      "reqIds": [
+        "REQ-36"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-persisted-pre-login-sign-in-type-storage-key-to-match-current-branding-while-maintaining-backward-compatibility-so-existing-sessions-do-not-break",
+      "title": "Update the persisted pre-login sign-in type storage key to match current branding while maintaining backward compatibility so existing sessions do not break.",
+      "reqIds": [
+        "REQ-37"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-publish-the-current-deployed-application-by-setting-the-backend-publication-status-to-published-i-e-exit-maintenance-unpublished-mode-using-the-existing-admin-only-publish-mechanism-so-regular-users-can-access-the-landing-page-profile-setup-dashboard-instead-of-the-takedown-screen",
+      "title": "Publish the current deployed application by setting the backend publication status to \"published\" (i.e., exit maintenance/unpublished mode) using the existing admin-only publish mechanism, so regular users can access the Landing Page / Profile Setup / Dashboard instead of the takedown screen.",
+      "reqIds": [
+        "REQ-38"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-publish-the-currently-deployed-version-30-build-by-setting-the-backend-publication-status-to-published-using-the-existing-admin-only-publish-mechanism-backend-method-publishapp-so-regular-users-can-access-the-landing-page-profile-setup-dashboard-instead-of-the-takedown-screen",
+      "title": "Publish the currently deployed Version 30 build by setting the backend publication status to \"published\" using the existing admin-only publish mechanism (backend method: publishApp), so regular users can access the Landing Page / Profile Setup / Dashboard instead of the takedown screen.",
+      "reqIds": [
+        "REQ-39"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -340,6 +382,14 @@
         "REQ-30"
       ],
       "status": "pending"
+    },
+    {
+      "id": "AR-23",
+      "summary": "Publish the newly built Version 30 deployment (exit unpublished/maintenance mode) so regular users can access the app instead of the takedown screen",
+      "reqIds": [
+        "REQ-38"
+      ],
+      "status": "in_progress"
     }
   ],
   "projectName": "Homeschool Hub K-12",

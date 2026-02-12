@@ -6,6 +6,7 @@ import { useTheme } from 'next-themes';
 import OfflineIndicator from './OfflineIndicator';
 import RoleSignInButtons from './RoleSignInButtons';
 import { APP_NAME } from '../constants/branding';
+import { clearSignInType } from '../utils/signInType';
 
 export default function Header() {
   const { clear, identity } = useInternetIdentity();
@@ -15,6 +16,8 @@ export default function Header() {
   const isAuthenticated = !!identity;
 
   const handleLogout = async () => {
+    // Clear sign-in type on logout
+    clearSignInType();
     await clear();
     queryClient.clear();
   };
